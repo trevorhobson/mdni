@@ -54,7 +54,7 @@
 							<button label="&loadIDL.label;" oncommand="mdci.userLoadIDL();"/>
 							<button label="&generateMDC.label;" oncommand="mdci.userGenerateMDC();"/>
 							<label value="&sourceIdl.label;" control="sourceIdl" />
-							<textbox id="sourceIdl" wrap="off" flex="1"/>
+							<textbox id="sourceIdl" wrap="off" flex="1" value="nsIAccessibleTable"/>
 						</hbox>
 						<textbox id="sourceText" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 					</vbox>

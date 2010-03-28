@@ -270,8 +270,8 @@ this.jsdump(cleanIdl);
 				}
 				else if (stringIdlLineClean.match(/^CONST\s/i) !== null) // Found a constant
 				{
-					var constantName = stringIdlLineClean.match(/\S+(?=;)/)[0];
-					var constantValue = stringIdlLineClean.match(/[^\=]+(?=\s*;$)/)[0].replace(/^\s+/, '');
+					var constantName = stringIdlLineClean.match(/\S+(?=\s*\=)/)[0];
+					var constantValue = stringIdlLineClean.match(/[^\=]+(?=\s*;)/)[0].replace(/^\s+/, '');
 					// Add to constant order
 					arrayConstantOrder[countConstantOrder++] = constantName;
 
@@ -329,6 +329,7 @@ this.jsdump(cleanIdl);
 				}
 			}
 		}
+		this.objInterfaces[interfaceName].constantOrder = arrayConstantOrder;
 	},
 
 	// Create the MDC document from an Interface Object
@@ -347,71 +348,19 @@ this.jsdump(cleanIdl);
 		objInterface.versionLastChanged = objInterface.versionLastAddition;
 
 		// Create array of Methods and do some pre-processing
-		var arrayMethods = [];
-		for each (var objMethod in objInterface.methods)
-		{
-			// Method title (only applies to method)
-			objMethod.methodTitle = '<h3 name="' + objMethod.nameText + '.28.29">' + objMethod.nameText + '()</h3>';
+		arrayMethods = this.processObject(objInterface.methods, objInterface, sourceVersionGeko);
 
-			// Gecko Minversion
-			objMethod.minversionText = '';
-			if (objMethod.versionFirst != objInterface.versionFirst)
-			{
-				objMethod.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objMethod.versionFirst][1] + '")}}';
-				objMethod.methodTitle = '<p>{{method_gecko_minversion("' + objMethod.nameText + '")}}</p>\n';
-			}
-
-			// Check if noscript
-			objMethod.noscriptText = '';
-			if (objMethod.lineIdl.match(/\[noscript\]\s+/i) !== null)
-			{
-				objMethod.noscriptText = ' {{noscript_inline()}}';
-				objMethod.lineIdl = objMethod.lineIdl.replace(/\[noscript\]\s+/, '')
-				objMethod.methodTitle = '<p>{{method_noscript("' + objMethod.nameText + '")}}</p>\n';
-			}
-
-			// Check if obsolete
-			objMethod.obsoleteText = '';
-			if (objMethod.versionLast != objInterface.versionLast)
-			{
-				objMethod.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objMethod.versionLast + 1][1] + '")}}';
-				objMethod.methodTitle = '<p>{{method_obsolete_gecko("' + objMethod.nameText + '")}}</p>\n';
-				// While here update Gecko Last changed Version
-				if (objInterface.versionLastChanged < objMethod.versionLast + 1)
-				{
-					objInterface.versionLastChanged = objMethod.versionLast + 1;
-				}
-			}
-
-			// Check if readonly (only applies to attributes)
-			objMethod.readonlyText = '';
-			if (objMethod.lineIdl.match(/\breadonly\s+/i) !== null)
-			{
-				objMethod.readonlyText = '<strong>Read only.</strong> ';
-				objMethod.lineIdl = objMethod.lineIdl.replace(/readonly\s+/i, '')
-			}
-			arrayMethods.push(objMethod.nameText);
-		}
 		// Sort Methods array
 		arrayMethods.sort();
 
 		// Create array of Attributes
-		var arrayAttributes = [];
-		for each (var objAttribute in objInterface.attributes)
-		{
-			// While here update Gecko Last changed Version
-			if (objAttribute.versionLast < sourceVersionGeko.length - 1 && objInterface.versionLastChanged < objAttribute.versionLast + 1)
-			{
-				objInterface.versionLastChanged = objAttribute.versionLast + 1;
-			}
+		var arrayAttributes =  this.processObject(objInterface.attributes, objInterface, sourceVersionGeko);
 
-			arrayAttributes.push(objAttribute.nameText);
-		}
 		// Sort Attributes array
 		arrayAttributes.sort();
 
-		// Create array of Constants, DO NOT SORT!!
-		var arrayConstants = [];
+		// Create array of Constants in idl order, then obsolete ones
+		var arrayConstants = objInterface.constantOrder;
 		for each (var objConstant in objInterface.constants)
 		{
 			// While here update Gecko Last changed Version
@@ -419,8 +368,19 @@ this.jsdump(cleanIdl);
 			{
 				objInterface.versionLastChanged = objConstant.versionLast + 1;
 			}
-
-			arrayConstants.push(objConstant.nameText);
+			var alreadySorted = false;
+			for (var i=0; i<arrayConstants.length; i++)
+			{
+				if (arrayConstants == objConstant.nameText)
+				{
+					alreadySorted = true;
+					break;
+				}
+			}
+			if (alreadySorted == false)
+			{
+				arrayConstants.push(objConstant.nameText);
+			}
 		}
 
 		var stringMDC = '';
@@ -518,6 +478,189 @@ catch (err) {}
 			stringMDC += '</tbody>\n';
 			stringMDC += '</table>\n';
 		}
+
+		// Create Attributes table
+		if (arrayAttributes.length > 0)
+		{
+			stringMDC += '<h2 name="Attributes">Attributes</h2>\n';
+			stringMDC += '<table class="standard-table">\n';
+			stringMDC += '<tbody>\n';
+			stringMDC += '<tr>\n';
+			stringMDC += '<td class="header">Attribute</td>\n';
+			stringMDC += '<td class="header">Type</td>\n';
+			stringMDC += '<td class="header">Description</td>\n';
+			stringMDC += '</tr>\n';
+
+			for (var i=0; i<arrayAttributes.length; i++)
+			{
+				// Format attribute type
+				var stringAttributeType = objInterface.attributes[arrayAttributes[i]].lineIdl.match(/(?:^|\s+)attribute\s+(.*)(?=\s+\S+\s*;)/)[1];
+				var stringAttributeTypeLink = stringAttributeType;
+				if (stringAttributeType.match(/nsI\S+/) !== null) // Is an nsI type
+				{
+					stringAttributeTypeLink = stringAttributeType.replace(/(nsI\S+)(?=\b)/, '{{Interface("$1")}}')
+				}
+				else // Is another type
+				{
+					stringAttributeTypeLink = '<a href="mks://localhost/en/' + stringAttributeType.replace(/\s+/g, '_') + '" title="en/' + stringAttributeType + '">' + stringAttributeType + '</a>';
+				}
+
+				// Format prefix
+				var stringAttributePrefixRaw = objInterface.attributes[arrayAttributes[i]].lineIdl.match(/^.*(?=\s+attribute)/)
+				var stringAttributePrefix = '';
+				if (stringAttributePrefixRaw !== null)
+				{
+					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/readonly/i, ' <strong>Read only.</strong>');
+				}
+
+				// If the attribute has a comment
+				if (objInterface.attributes[arrayAttributes[i]].comment !== '')
+				{
+					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true);
+				}
+
+				stringMDC += '<tr>\n';
+				stringMDC += '<td><code>' + objInterface.attributes[arrayAttributes[i]].nameText + '</code></td>\n';
+				stringMDC += '<td><code>' + stringAttributeTypeLink + '</code></td>\n';
+				stringMDC += '<td>'
+				stringMDC += stringAttributeCommentPretty;
+				stringMDC += stringAttributePrefix
+				stringMDC += objInterface.attributes[arrayAttributes[i]].noscriptText;
+				stringMDC += objInterface.attributes[arrayAttributes[i]].minversionText;
+				stringMDC += objInterface.attributes[arrayAttributes[i]].obsoleteText;
+				stringMDC += '</td>\n';
+				stringMDC += '</tr>\n';
+			}
+			stringMDC += '</tbody>\n';
+			stringMDC += '</table>\n';
+		}
+
+		// Create Constants table
+		if (arrayConstants.length > 0)
+		{
+			stringMDC += '<h2 name="Constants">Constants</h2>\n';
+			stringMDC += '<table class="standard-table">\n';
+			stringMDC += '<tbody>\n';
+			if (objInterface.constantsChanged = false)
+			{
+				stringMDC += '<tr>\n';
+				stringMDC += '<td class="header">Constant</td>\n';
+				stringMDC += '<td class="header">Value</td>\n';
+				stringMDC += '<td class="header">Description</td>\n';
+				stringMDC += '</tr>\n';
+			}
+			else
+			{
+				stringMDC += '<tr>\n';
+				stringMDC += '<td class="header" rowspan="2">Constant</td>\n';
+				stringMDC += '<td class="header" colspan="' + (objInterface.versionLast - objInterface.versionFirst + 1) + '">Value<br>(Geko version)</td>\n';
+				stringMDC += '<td class="header" rowspan="2">Description</td>\n';
+				stringMDC += '</tr>\n';
+				stringMDC += '<tr>\n';
+				for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
+				{
+					stringMDC += '<td class="header">' + sourceVersionGeko[j][1] + '</td>\n';
+				}
+				stringMDC += '</tr>\n';
+			}
+			for (var i=0; i<arrayConstants.length; i++)
+			{
+				// If the constant has a comment
+				var stringConstantCommentPretty = '';
+				if (objInterface.constants[arrayConstants[i]].comment !== '')
+				{
+					stringConstantCommentPretty = this.tidyComment(objInterface.constants[arrayConstants[i]].comment, true);
+				}
+
+				stringMDC += '<tr>\n';
+				stringMDC += '<td><code>' + objInterface.constants[arrayConstants[i]].nameText + '</code></td>\n';
+
+				if (objInterface.constantsChanged = false)
+				{
+					stringMDCConstants += '<td><code>' + objInterface.constants[arrayConstants[i]].valuePrevious + '</code></td>\n';
+				}
+				else
+				{
+					for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
+					{
+						if (objInterface.constants[arrayConstants[i]].values[j] === undefined)
+						{
+							objInterface.constants[arrayConstants[i]].values[j] = '';
+						}
+						stringMDC += '<td><code>';
+						stringMDC += objInterface.constants[arrayConstants[i]].values[j];
+						stringMDC += '</code></td>\n';
+					}
+				}
+				stringMDC += '<td>' + stringConstantCommentPretty + '</td>\n';
+				stringMDC += '</tr>\n';
+			}
+			stringMDC += '</tbody>\n';
+			stringMDC += '</table>\n';
+		}
+
+		// Create Methods
+		if (arrayMethods.length > 0)
+		{
+			stringMDC += '<h2 name="Method_overview">Method overview</h2>\n';
+			stringMDC += '<table class="standard-table">\n';
+			stringMDC += '<tbody>\n';
+			for (var i=0; i<arrayMethods.length; i++)
+			{
+				var stringMethodLink = '<a href="#' + arrayMethods[i] + '.28.29">' + arrayMethods[i] + '</a>';
+				stringMDC += '<tr>\n';
+				stringMDC += '<td>';
+				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink) + '</code>';
+				stringMDC += objInterface.methods[arrayMethods[i]].noscriptText;
+				stringMDC += objInterface.methods[arrayMethods[i]].minversionText;
+				stringMDC += objInterface.methods[arrayMethods[i]].obsoleteText;
+				stringMDC += '</td>\n';
+				stringMDC += '</tr>\n';
+			}
+			stringMDC += '</tbody>\n';
+			stringMDC += '</table>\n';
+		}
+
+
+/*		var arrayMethods = [];
+		for each (var objMethod in objInterface.methods)
+		{
+			// Method title (only applies to method)
+			objMethod.methodTitle = '<h3 name="' + objMethod.nameText + '.28.29">' + objMethod.nameText + '()</h3>';
+
+			// Gecko Minversion
+			objMethod.minversionText = '';
+			if (objMethod.versionFirst != objInterface.versionFirst)
+			{
+				objMethod.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objMethod.versionFirst][1] + '")}}';
+				objMethod.methodTitle = '<p>{{method_gecko_minversion("' + objMethod.nameText + '")}}</p>\n';
+			}
+
+			// Check if noscript
+			objMethod.noscriptText = '';
+			if (objMethod.lineIdl.match(/\[noscript\]\s+/i) !== null)
+			{
+				objMethod.noscriptText = ' {{noscript_inline()}}';
+				objMethod.lineIdl = objMethod.lineIdl.replace(/\[noscript\]\s+/, '')
+				objMethod.methodTitle = '<p>{{method_noscript("' + objMethod.nameText + '")}}</p>\n';
+			}
+
+			// Check if obsolete
+			objMethod.obsoleteText = '';
+			if (objMethod.versionLast != objInterface.versionLast)
+			{
+				objMethod.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objMethod.versionLast + 1][1] + '")}}';
+				objMethod.methodTitle = '<p>{{method_obsolete_gecko("' + objMethod.nameText + '")}}</p>\n';
+				// While here update Gecko Last changed Version
+				if (objInterface.versionLastChanged < objMethod.versionLast + 1)
+				{
+					objInterface.versionLastChanged = objMethod.versionLast + 1;
+				}
+			}
+
+			arrayMethods.push(objMethod.nameText);
+		} */
+
 
 // TODO: actual code to do this here.
 // TODO: Remember to create links to methods etc in comments
@@ -1262,8 +1405,6 @@ catch (err) {}
 		// Purge multiple blank comment lines, trailing blank comment lines, and blank comment lines before @ lines
 		var stringPurgeA = stringSwitchA.replace(/\*\n(?=\*(\n|\/|\s*@))/g, '')
 
-//this.jsdump(stringPurgeA);
-
 		return stringPurgeA;
 
 	},
@@ -1280,12 +1421,13 @@ catch (err) {}
 
 		var arrayParagraph = [];
 		var currentParagraph = 0;
+		arrayParagraph[currentParagraph] = '';
 		var listTracker = [];
 		var listLevel = 0;
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
 		var inAt = false;
-		var sourceCommentLines = sourceCommentB.match(/[^\n]*(?:\n|$)/g);
+		var sourceCommentLines = sourceCommentB.match(/[^\n]+(?=\n|$)/g);
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
 			// Start new paragraph if a blank line
@@ -1297,11 +1439,11 @@ catch (err) {}
 					arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>';
 					listLevel--;
 				}
-				currentParagraph++;
+				arrayParagraph[++currentParagraph] = '';
 				inAt = false;
 			}
 			// Check for @ paragraphs
-			else if (sourceCommentLines[i].match(/\*\s*@/) === null)
+			else if (sourceCommentLines[i].match(/\*\s*@/) !== null)
 			{
 				// Close any lists
 				while (listLevel > 0)
@@ -1309,7 +1451,7 @@ catch (err) {}
 					arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>';
 					listLevel--;
 				}
-				currentParagraph++;
+				arrayParagraph[++currentParagraph] = '';
 				if (sourceCommentLines[i].match(/^\*\s@note/i) !== null) // @note
 				{
 					arrayParagraph[currentParagraph] = '@note ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@note/, ''));
@@ -1333,7 +1475,7 @@ catch (err) {}
 						listLevel--;
 					}
 					while (levelIndent >= listTracker[listLevel].indent)
-					currentParagraph++;
+					arrayParagraph[++currentParagraph] = '';
 				}
 				// If the indent is higher than the current indent
 				else if (levelIndent > listTracker[listLevel].indent)
@@ -1379,33 +1521,77 @@ catch (err) {}
 				arrayParagraph[currentParagraph] += sourceCommentLines[i].replace(/\*\s*/, ' ');
 			}
 		}
-		if (arrayParagraph[currentParagraph] == '')
+
+		// Strip any trailing blank paragraphs
+		while (arrayParagraph[arrayParagraph.length - 1] == '')
 		{
-			arrayParagraph.splice(currentParagraph, 1);
-			currentParagraph--;
+			arrayParagraph.splice(arrayParagraph.length - 1, 1);
 		}
 
-		for (var i=0; i<=currentParagraph; i++)
+		for (var i=0; i<arrayParagraph.length; i++)
 		{
+			// Strip leading an trailing spaces
+			arrayParagraph[i] = arrayParagraph[i].replace(/(^\s+|\s+$)/g, '');
+
 			// Add missing punctuation
 			arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n)/, '$1\.');
 
 			// Add note template to notes
-			if (arrayParagraph[i].match(/@note\s/) !== null)
+			if (arrayParagraph[i].match(/^@note\s/) !== null)
 			{
-				arrayParagraph[i] = '{{note("' + arrayParagraph[i].replace(/@note/, '') + '")}}';
+				arrayParagraph[i] = '{{note("' + arrayParagraph[i].replace(/^@note\s+/, '') + '")}}';
 			}
 
-			// Put 'p' tags around paragraphs
-			if (i = currentParagraph && forTable)
+			// Put 'p' tags around paragraphs if required
+			if (i == arrayParagraph.length - 1 && forTable)
 			{
-				stringReturn = arrayParagraph[i];
+				stringReturn += arrayParagraph[i];
 			}
 			else
 			{
-				stringReturn = '<p>' + arrayParagraph[i] + '</p>';
+				stringReturn += '<p>' + arrayParagraph[i] + '</p>';
 			}
 		}
+		return stringReturn;
+	},
+
+	// Create array of object nameText and pre-process interface
+	processObject: function(objectsGeneric, objInterface, sourceVersionGeko)
+	{
+		var arrayGeneric = [];
+		for each (var objGeneric in objectsGeneric)
+		{
+			// Gecko Minversion
+			objGeneric.minversionText = '';
+			if (objGeneric.versionFirst != objInterface.versionFirst)
+			{
+				objGeneric.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objGeneric.versionFirst][1] + '")}}';
+			}
+
+			// Check if noscript
+			objGeneric.noscriptText = '';
+			if (objGeneric.lineIdl.match(/\[noscript\]\s+/i) !== null)
+			{
+				objGeneric.noscriptText = ' {{noscript_inline()}}';
+				objGeneric.lineIdl = objGeneric.lineIdl.replace(/\[noscript\]\s+/, '')
+			}
+
+			// Check if obsolete
+			objGeneric.obsoleteText = '';
+			if (objGeneric.versionLast != objInterface.versionLast)
+			{
+				objGeneric.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objGeneric.versionLast + 1][1] + '")}}';
+				// While here update Gecko Last changed Version
+				if (objInterface.versionLastChanged < objGeneric.versionLast + 1)
+				{
+					objInterface.versionLastChanged = objGeneric.versionLast + 1;
+				}
+			}
+
+			arrayGeneric.push(objGeneric.nameText);
+		}
+
+		return arrayGeneric;
 	},
 
 /***********************************************************
