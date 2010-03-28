@@ -216,12 +216,12 @@ this.jsdump(cleanIdl);
 					this.objInterfaces[interfaceName].constants = {};
 					this.objInterfaces[interfaceName].methods = {};
 					this.objInterfaces[interfaceName].interfaceName = interfaceName;
-					this.objInterfaces[interfaceName].versionFirst = sourceVersionGeko[sourceVersionGekoIndex][1];
+					this.objInterfaces[interfaceName].versionFirst = sourceVersionGekoIndex;
 				}
 				this.objInterfaces[interfaceName].path = pathIdl;
 				this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
 				this.objInterfaces[interfaceName].inherits = interfaceInherits;
-				this.objInterfaces[interfaceName].versionLast = sourceVersionGeko[sourceVersionGekoIndex][1];
+				this.objInterfaces[interfaceName].versionLast = sourceVersionGekoIndex;
 				this.objInterfaces[interfaceName].comment = stringComment;
 				stringComment = '';
 				inInterface = true;
@@ -252,18 +252,18 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].attributes[attributeName] = {};
 						this.objInterfaces[interfaceName].attributes[attributeName].attributeName = attributeName;
-						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGeko[sourceVersionGekoIndex][1];
+						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGekoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].attributes[attributeName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = this.objInterfaces[interfaceName].attributes[attributeName].versionLast + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].attributes[attributeName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].attributes[attributeName].versionLast = sourceVersionGeko[sourceVersionGekoIndex][1];
+					this.objInterfaces[interfaceName].attributes[attributeName].versionLast = sourceVersionGekoIndex;
 					this.objInterfaces[interfaceName].attributes[attributeName].comment = stringComment;
 					stringComment = '';
 				}
@@ -278,7 +278,7 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].constants[constantName] = {};
 						this.objInterfaces[interfaceName].constants[constantName].constantName = constantName;
-						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGeko[sourceVersionGekoIndex][1];
+						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGekoIndex;
 						this.objInterfaces[interfaceName].constants[constantName].values = [];
 					}
 					else
@@ -286,7 +286,7 @@ this.jsdump(cleanIdl);
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].constants[constantName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = this.objInterfaces[interfaceName].constants[constantName].versionLast + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 						// If the value of the constant changed then let the iterface know so we can create a different constants table
 						// (Why, oh why do we have to do this. Should not a constant be, CONSTANT!!!)
@@ -296,7 +296,7 @@ this.jsdump(cleanIdl);
 						}
 					}
 					this.objInterfaces[interfaceName].constants[constantName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].constants[constantName].versionLast = sourceVersionGeko[sourceVersionGekoIndex][1];
+					this.objInterfaces[interfaceName].constants[constantName].versionLast = sourceVersionGekoIndex;
 					this.objInterfaces[interfaceName].constants[constantName].comment = stringComment;
 					this.objInterfaces[interfaceName].constants[constantName].values[sourceVersionGekoIndex] = constantValue;
 					this.objInterfaces[interfaceName].constants[constantName].valuePrevious = constantValue;
@@ -309,18 +309,18 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].methods[methodName] = {};
 						this.objInterfaces[interfaceName].methods[methodName].methodName = methodName;
-						this.objInterfaces[interfaceName].methods[methodName].versionFirst = sourceVersionGeko[sourceVersionGekoIndex][1];
+						this.objInterfaces[interfaceName].methods[methodName].versionFirst = sourceVersionGekoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].methods[methodName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = this.objInterfaces[interfaceName].methods[methodName].versionLast + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].methods[methodName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].methods[methodName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].methods[methodName].versionLast = sourceVersionGeko[sourceVersionGekoIndex][1];
+					this.objInterfaces[interfaceName].methods[methodName].versionLast = sourceVersionGekoIndex;
 					this.objInterfaces[interfaceName].methods[methodName].comment = stringComment;
 					stringComment = '';
 				}
