@@ -220,6 +220,7 @@ this.jsdump(cleanIdl);
 				}
 				this.objInterfaces[interfaceName].path = pathIdl;
 				this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
+				this.objInterfaces[interfaceName].inherits = interfaceInherits;
 				this.objInterfaces[interfaceName].versionLast = sourceVersionGeko[sourceVersionGekoIndex][1];
 				this.objInterfaces[interfaceName].comment = stringComment;
 				stringComment = '';
@@ -339,8 +340,30 @@ this.jsdump(cleanIdl);
 		// Regular expression used to create links to interfaces
 		var notThisInterface = new RegExp('\\bnsI(?!' + interfaceNameShort + ')\\w*', 'i');
 
+		// Create array of Methods and sort
+		var arrayMethods = [];
+		for (var objMethod in objInterface.methods)
+		{
+			arrayMethods.push(objMethod.methodName);
+//			arrayMethods[arrayMethods.length] = objMethod.methodName;
+		}
+		arrayMethods.sort();
+		// Create array of Attributes and sort
+		var arrayAttributes = [];
+		for (var objAttribute in objInterface.attributes)
+		{
+			arrayAttributes[arrayAttributes.length] = objAttribute.attributeName;
+		}
+		arrayAttributes.sort();
+		// Create array of Constants and DO NOT SORT!!
+		var arrayConstants = [];
+		for (var objConstant in objInterface.constants)
+		{
+			arrayConstants[arrayConstants.length] = objConstant.constantName;
+		}
+
 // TODO: Code to find the last changed version
-// TODO: Sort methods, attributes, constants
+// TODO: Sort methods, attributes
 // TODO: Remember to create links to methods etc in comments
 
 		var stringMDC = '';
@@ -379,12 +402,15 @@ this.jsdump(cleanIdl);
 		interfaceNameShort = interfaceNameShort.replace(/^./, interfaceNameShortFirst);
 
 // TODO: Find the ?????????? detail
+/*
 		for (var cClass in Components.classes)
 		{
 // This causes browser to crash
-/*
+if (cClass.match(/@mozilla/) !== null && cClass !== '@mozilla.org/generic-factory;1' && cClass !== '@mozilla.org/xmlextras/proxy/webservicepropertybagwrapper;1' && cClass !== '@mozilla.org/extensions/manager;1'  && cClass !== '@mozilla.org/nss_errors_service;1' && cClass.match(/@mozilla.org\/intl\/unicode\/decoder/) == null)
+{
 try
 {
+dump('Creating: "' + cClass + '"\n');
 			var obj = Components.classes[cClass].createInstance();
 
 			if (obj.QueryInterface(Components.interfaces[objInterface.interfaceName]))
@@ -394,8 +420,8 @@ try
 }
 catch (err) {}
 		}
+}
 */
-
 		stringMDC += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\>. To create an instance, use:</p>\n';
 		stringMDC += '<pre class="eval">\n';
 		stringMDC += 'var ' + interfaceNameShort + ' = Components.classes["@mozilla.org/????????????????????????????"]\n';
