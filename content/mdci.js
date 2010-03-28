@@ -465,7 +465,7 @@ catch (err) {}
 			stringMDC += '<tbody>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
-				var stringMethodLink = '<a href="#' + arrayMethods[i] + '.28.29">' + arrayMethods[i] + '</a>';
+				var stringMethodLink = '<a href="#' + arrayMethods[i] + '()">' + arrayMethods[i] + '</a>';
 				stringMDC += '<tr>\n';
 				stringMDC += '<td>';
 				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink) + '</code>';
@@ -602,65 +602,49 @@ catch (err) {}
 		// Create Methods
 		if (arrayMethods.length > 0)
 		{
-			stringMDC += '<h2 name="Method_overview">Method overview</h2>\n';
-			stringMDC += '<table class="standard-table">\n';
-			stringMDC += '<tbody>\n';
+			stringMDC += '<h2 name="Methods">Methods</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
-				var stringMethodLink = '<a href="#' + arrayMethods[i] + '.28.29">' + arrayMethods[i] + '</a>';
-				stringMDC += '<tr>\n';
-				stringMDC += '<td>';
-				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink) + '</code>';
-				stringMDC += objInterface.methods[arrayMethods[i]].noscriptText;
-				stringMDC += objInterface.methods[arrayMethods[i]].minversionText;
-				stringMDC += objInterface.methods[arrayMethods[i]].obsoleteText;
-				stringMDC += '</td>\n';
-				stringMDC += '</tr>\n';
-			}
-			stringMDC += '</tbody>\n';
-			stringMDC += '</table>\n';
-		}
-
-
-/*		var arrayMethods = [];
-		for each (var objMethod in objInterface.methods)
-		{
-			// Method title (only applies to method)
-			objMethod.methodTitle = '<h3 name="' + objMethod.nameText + '.28.29">' + objMethod.nameText + '()</h3>';
-
-			// Gecko Minversion
-			objMethod.minversionText = '';
-			if (objMethod.versionFirst != objInterface.versionFirst)
-			{
-				objMethod.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objMethod.versionFirst][1] + '")}}';
-				objMethod.methodTitle = '<p>{{method_gecko_minversion("' + objMethod.nameText + '")}}</p>\n';
-			}
-
-			// Check if noscript
-			objMethod.noscriptText = '';
-			if (objMethod.lineIdl.match(/\[noscript\]\s+/i) !== null)
-			{
-				objMethod.noscriptText = ' {{noscript_inline()}}';
-				objMethod.lineIdl = objMethod.lineIdl.replace(/\[noscript\]\s+/, '')
-				objMethod.methodTitle = '<p>{{method_noscript("' + objMethod.nameText + '")}}</p>\n';
-			}
-
-			// Check if obsolete
-			objMethod.obsoleteText = '';
-			if (objMethod.versionLast != objInterface.versionLast)
-			{
-				objMethod.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objMethod.versionLast + 1][1] + '")}}';
-				objMethod.methodTitle = '<p>{{method_obsolete_gecko("' + objMethod.nameText + '")}}</p>\n';
-				// While here update Gecko Last changed Version
-				if (objInterface.versionLastChanged < objMethod.versionLast + 1)
+				// If the method has a comment
+				var stringMethodCommentPretty = '';
+				if (objInterface.methods[arrayMethods[i]].comment !== '')
 				{
-					objInterface.versionLastChanged = objMethod.versionLast + 1;
+					stringMethodCommentPretty = this.tidyComment(objInterface.methods[arrayMethods[i]].comment, false, objInterface.methods[arrayMethods[i]]);
 				}
+
+				// I have decided that this is the most logical order
+				if (objInterface.methods[arrayMethods[i]].noscriptText !== '') // Noscript
+				{
+					stringMDC += '<p>{{method_noscript("' + objInterface.methods[arrayMethods[i]].nameText + '")}}</p>\n';
+					if (objInterface.methods[arrayMethods[i]].minversionText !== '')
+					{
+						stringMDC += '<p>{{gecko_minversion_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n'
+					}
+					if (objInterface.methods[arrayMethods[i]].obsoleteText !== '')
+					{
+						stringMDC += '<p>{{obsolete_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
+					}
+				}
+				else if (objInterface.methods[arrayMethods[i]].minversionText !== '') // Minversion
+				{
+					stringMDC += '<p>{{method_gecko_minversion("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n';
+					if (objInterface.methods[arrayMethods[i]].obsoleteText !== '')
+					{
+						stringMDC += '<p>{{obsolete_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
+					}
+				}
+				else if (objInterface.methods[arrayMethods[i]].obsoleteText !== '') // Obsolete
+				{
+					stringMDC += '<p>{{method_obsolete_gecko("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n';
+				}
+				else // Clean
+				{
+					stringMDC += '<h3 name="' + objInterface.methods[arrayMethods[i]].nameText + '()">' + objInterface.methods[arrayMethods[i]].nameText + '()</h3>\n'
+				}
+
+				stringMDC += stringMethodCommentPretty + '\n';
 			}
-
-			arrayMethods.push(objMethod.nameText);
-		} */
-
+		}
 
 // TODO: actual code to do this here.
 // TODO: Remember to create links to methods etc in comments
@@ -1409,7 +1393,8 @@ catch (err) {}
 
 	},
 
-	tidyComment: function(sourceComment, forTable)
+	// Pretty format comment, optional also add @param/@throws to object
+	tidyComment: function(sourceComment, forTable, objGeneric)
 	{
 		var stringReturn = '';
 
@@ -1426,7 +1411,7 @@ catch (err) {}
 		var listLevel = 0;
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
-		var inAt = false;
+//		var inAt = false;
 		var sourceCommentLines = sourceCommentB.match(/[^\n]+(?=\n|$)/g);
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
@@ -1443,7 +1428,7 @@ catch (err) {}
 				inAt = false;
 			}
 			// Check for @ paragraphs
-			else if (sourceCommentLines[i].match(/\*\s*@/) !== null)
+			else if (sourceCommentLines[i].match(/^\*\s*@\S/) !== null)
 			{
 				// Close any lists
 				while (listLevel > 0)
@@ -1452,13 +1437,18 @@ catch (err) {}
 					listLevel--;
 				}
 				arrayParagraph[++currentParagraph] = '';
-				if (sourceCommentLines[i].match(/^\*\s@note/i) !== null) // @note
+
+				var atType = sourceCommentLines[i].match(/(?:^\*\s*)(@\S+)(?=\s)/)[1].toLowerCase();
+//				arrayParagraph[currentParagraph] = atType + ' ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@\S+\s+/, ''));
+				if (atType == '@note') // @note
 				{
-					arrayParagraph[currentParagraph] = '@note ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@note/, ''));
+					arrayParagraph[currentParagraph] = '@note ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@note\s+/, ''));
 				}
-				else // Ignore anything other than a note
+				else // Different format for @param etc
 				{
-					inAt = true;
+					arrayParagraph[currentParagraph] = atType + ' ' + sourceCommentLines[i].replace(/^\*\s*@\S+\s+/, '')
+
+//					inAt = true;
 				}
 			}
 			// Check for list
@@ -1513,10 +1503,11 @@ catch (err) {}
 					arrayParagraph[currentParagraph] += this.firstCaps(sourceCommentLines[i].replace(/^\*\s*(-#?\s*)/, ''));
 				}
 
-				inAt = false;
+//				inAt = false;
 			}
 			// Continue the paragraph
-			else if (!inAt)
+			else
+//			else if (!inAt)
 			{
 				arrayParagraph[currentParagraph] += sourceCommentLines[i].replace(/\*\s*/, ' ');
 			}
@@ -1530,7 +1521,7 @@ catch (err) {}
 
 		for (var i=0; i<arrayParagraph.length; i++)
 		{
-			// Strip leading an trailing spaces
+			// Strip leading and trailing spaces
 			arrayParagraph[i] = arrayParagraph[i].replace(/(^\s+|\s+$)/g, '');
 
 			// Add missing punctuation
@@ -1542,14 +1533,26 @@ catch (err) {}
 				arrayParagraph[i] = '{{note("' + arrayParagraph[i].replace(/^@note\s+/, '') + '")}}';
 			}
 
-			// Put 'p' tags around paragraphs if required
-			if (i == arrayParagraph.length - 1 && forTable)
+			// Non-note @
+			if (arrayParagraph[i].match(/^@\S/) !== null)
 			{
-				stringReturn += arrayParagraph[i];
+				// If an object has been passed then add to it
+				if (objGeneric)
+				{
+this.jsdump('Yay');
+				}
 			}
 			else
 			{
-				stringReturn += '<p>' + arrayParagraph[i] + '</p>';
+				// Put 'p' tags around paragraphs if required
+				if (i == arrayParagraph.length - 1 && forTable)
+				{
+					stringReturn += arrayParagraph[i];
+				}
+				else
+				{
+					stringReturn += '<p>' + arrayParagraph[i] + '</p>';
+				}
 			}
 		}
 		return stringReturn;
