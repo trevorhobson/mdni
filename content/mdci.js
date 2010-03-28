@@ -482,6 +482,7 @@ catch (err) {}
 		// Create Attributes table
 		if (arrayAttributes.length > 0)
 		{
+// TODO: Add exceptions
 			stringMDC += '<h2 name="Attributes">Attributes</h2>\n';
 			stringMDC += '<table class="standard-table">\n';
 			stringMDC += '<tbody>\n';
@@ -493,6 +494,12 @@ catch (err) {}
 
 			for (var i=0; i<arrayAttributes.length; i++)
 			{
+				// If the attribute has a comment
+				if (objInterface.attributes[arrayAttributes[i]].comment !== '')
+				{
+					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true, objInterface.attributes[arrayAttributes[i]]);
+				}
+
 				// Format attribute type
 				var stringAttributeType = objInterface.attributes[arrayAttributes[i]].lineIdl.match(/(?:^|\s+)attribute\s+(.*)(?=\s+\S+\s*;)/)[1];
 				var stringAttributeTypeLink = stringAttributeType;
@@ -511,12 +518,6 @@ catch (err) {}
 				if (stringAttributePrefixRaw !== null)
 				{
 					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/readonly/i, ' <strong>Read only.</strong>');
-				}
-
-				// If the attribute has a comment
-				if (objInterface.attributes[arrayAttributes[i]].comment !== '')
-				{
-					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true);
 				}
 
 				stringMDC += '<tr>\n';
@@ -643,10 +644,16 @@ catch (err) {}
 				}
 
 				stringMDC += stringMethodCommentPretty + '\n';
+// TODO: Add exceptions, parameters etc
 			}
 		}
 
-// TODO: actual code to do this here.
+		stringMDC += '<h2 name="Remarks">Remarks</h2>\n';
+		stringMDC += '<p>&nbsp;</p>\n';
+
+		stringMDC += '<h2 name="See_also">See also</h2>\n';
+		stringMDC += '<p>&nbsp;</p>\n';
+
 // TODO: Remember to create links to methods etc in comments
 
 		return stringMDC;
@@ -1411,7 +1418,6 @@ catch (err) {}
 		var listLevel = 0;
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
-//		var inAt = false;
 		var sourceCommentLines = sourceCommentB.match(/[^\n]+(?=\n|$)/g);
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
@@ -1425,7 +1431,6 @@ catch (err) {}
 					listLevel--;
 				}
 				arrayParagraph[++currentParagraph] = '';
-				inAt = false;
 			}
 			// Check for @ paragraphs
 			else if (sourceCommentLines[i].match(/^\*\s*@\S/) !== null)
@@ -1436,20 +1441,7 @@ catch (err) {}
 					arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>';
 					listLevel--;
 				}
-				arrayParagraph[++currentParagraph] = '';
-
-				var atType = sourceCommentLines[i].match(/(?:^\*\s*)(@\S+)(?=\s)/)[1].toLowerCase();
-//				arrayParagraph[currentParagraph] = atType + ' ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@\S+\s+/, ''));
-				if (atType == '@note') // @note
-				{
-					arrayParagraph[currentParagraph] = '@note ' + this.firstCaps(sourceCommentLines[i].replace(/^\*\s*@note\s+/, ''));
-				}
-				else // Different format for @param etc
-				{
-					arrayParagraph[currentParagraph] = atType + ' ' + sourceCommentLines[i].replace(/^\*\s*@\S+\s+/, '')
-
-//					inAt = true;
-				}
+				arrayParagraph[++currentParagraph] = sourceCommentLines[i].replace(/\*\s*(?=@)/, '');
 			}
 			// Check for list
 			else if (sourceCommentLines[i].match(/^\*\s*(?=(-#?\s|\.$))/) !== null)
@@ -1502,57 +1494,111 @@ catch (err) {}
 					arrayParagraph[currentParagraph] += '<li>';
 					arrayParagraph[currentParagraph] += this.firstCaps(sourceCommentLines[i].replace(/^\*\s*(-#?\s*)/, ''));
 				}
-
-//				inAt = false;
 			}
 			// Continue the paragraph
 			else
-//			else if (!inAt)
 			{
 				arrayParagraph[currentParagraph] += sourceCommentLines[i].replace(/\*\s*/, ' ');
 			}
 		}
 
-		// Strip any trailing blank paragraphs
-		while (arrayParagraph[arrayParagraph.length - 1] == '')
+		// Tidy up paragraphs and deal with @ paragraphs (start from end as some may be deleted)
+		for (var i=arrayParagraph.length - 1; i>=0; i--)
 		{
-			arrayParagraph.splice(arrayParagraph.length - 1, 1);
-		}
-
-		for (var i=0; i<arrayParagraph.length; i++)
-		{
-			// Strip leading and trailing spaces
-			arrayParagraph[i] = arrayParagraph[i].replace(/(^\s+|\s+$)/g, '');
-
-			// Add missing punctuation
-			arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n)/, '$1\.');
-
-			// Add note template to notes
-			if (arrayParagraph[i].match(/^@note\s/) !== null)
+			// Strip blank paragraphs
+			if (arrayParagraph[i] == '')
 			{
-				arrayParagraph[i] = '{{note("' + arrayParagraph[i].replace(/^@note\s+/, '') + '")}}';
-			}
-
-			// Non-note @
-			if (arrayParagraph[i].match(/^@\S/) !== null)
-			{
-				// If an object has been passed then add to it
-				if (objGeneric)
-				{
-this.jsdump('Yay');
-				}
+				arrayParagraph.splice(i, 1);
 			}
 			else
 			{
-				// Put 'p' tags around paragraphs if required
-				if (i == arrayParagraph.length - 1 && forTable)
+				// Strip leading and trailing spaces
+				arrayParagraph[i] = arrayParagraph[i].replace(/(^\s+|\s+$)/g, '');
+
+				// Add missing punctuation
+				arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n)/, '$1\.');
+
+				// Add note template to notes
+				if (arrayParagraph[i].match(/^@note\s/i) !== null)
 				{
-					stringReturn += arrayParagraph[i];
+					arrayParagraph[i] = '{{note("' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '")}}';
 				}
-				else
+
+				// Non-note @
+				if (arrayParagraph[i].match(/^@\S/) !== null)
 				{
-					stringReturn += '<p>' + arrayParagraph[i] + '</p>';
+					// If an object has been passed then add to it
+					if (objGeneric)
+					{
+						// Get @ type and remove from paragraph
+						var atType = arrayParagraph[i].match(/@\S+(?=\s)/)[0].toLowerCase();
+						arrayParagraph[i] = arrayParagraph[i].replace(/@\S+\s+/, '');
+						if (atType === '@param' || atType === '@throws')
+						{
+							// Get @ name and remove from paragraph
+							var atName = arrayParagraph[i].match(/\S+(?=\s)/)[0];
+							var atNameLower = atName.toLowerCase();
+							arrayParagraph[i] = arrayParagraph[i].replace(/\S+\s+/, '');
+						}
+						// Strip any leading -
+						arrayParagraph[i] = arrayParagraph[i].replace(/-\s*(?=\S)/, '');
+
+						if (atType === '@param') // Parameter
+						{
+							// If object does not have parameters
+							if (!objGeneric.parameters)
+							{
+								objGeneric.parameters = {};
+							}
+							// If parameter object does not exist
+							if (!objGeneric.parameters[atNameLower])
+							{
+								objGeneric.parameters[atNameLower] = {};
+							}
+							objGeneric.parameters[atNameLower].nameText = atName;
+							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
+						}
+						else if (atType === '@throws') // Exception
+						{
+							// If object does not have exceptions
+							if (!objGeneric.exceptions)
+							{
+								objGeneric.exceptions = {};
+							}
+							// If exception object does not exist
+							if (!objGeneric.exceptions[atNameLower])
+							{
+								objGeneric.exceptions[atNameLower] = {};
+							}
+							objGeneric.exceptions[atNameLower].nameText = atName;
+							objGeneric.exceptions[atNameLower].description = this.firstCaps(arrayParagraph[i]);
+						}
+						else if (atType === '@returns') // Returns
+						{
+							// If object does not have returns
+							if (!objGeneric.returns)
+							{
+								objGeneric.returns = {};
+							}
+							objGeneric.returns.description = this.firstCaps(arrayParagraph[i]);
+						}
+					}
+					arrayParagraph.splice(i, 1)
 				}
+			}
+		}
+
+
+		for (var i=0; i<arrayParagraph.length; i++)
+		{
+			// Put 'p' tags around paragraphs if required
+			if (i == arrayParagraph.length - 1 && forTable)
+			{
+				stringReturn += arrayParagraph[i];
+			}
+			else
+			{
+				stringReturn += '<p>' + arrayParagraph[i] + '</p>';
 			}
 		}
 		return stringReturn;
