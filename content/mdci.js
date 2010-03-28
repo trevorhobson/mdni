@@ -251,8 +251,9 @@ this.jsdump(cleanIdl);
 					if (!this.objInterfaces[interfaceName].attributes[attributeName])
 					{
 						this.objInterfaces[interfaceName].attributes[attributeName] = {};
-						this.objInterfaces[interfaceName].attributes[attributeName].attributeName = attributeName;
+						this.objInterfaces[interfaceName].attributes[attributeName].nameText = attributeName;
 						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
 					}
 					else
 					{
@@ -277,9 +278,10 @@ this.jsdump(cleanIdl);
 					if (!this.objInterfaces[interfaceName].constants[constantName])
 					{
 						this.objInterfaces[interfaceName].constants[constantName] = {};
-						this.objInterfaces[interfaceName].constants[constantName].constantName = constantName;
+						this.objInterfaces[interfaceName].constants[constantName].nameText = constantName;
 						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGekoIndex;
 						this.objInterfaces[interfaceName].constants[constantName].values = [];
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
 					}
 					else
 					{
@@ -308,8 +310,9 @@ this.jsdump(cleanIdl);
 					if (!this.objInterfaces[interfaceName].methods[methodName])
 					{
 						this.objInterfaces[interfaceName].methods[methodName] = {};
-						this.objInterfaces[interfaceName].methods[methodName].methodName = methodName;
+						this.objInterfaces[interfaceName].methods[methodName].nameText = methodName;
 						this.objInterfaces[interfaceName].methods[methodName].versionFirst = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
 					}
 					else
 					{
@@ -340,31 +343,85 @@ this.jsdump(cleanIdl);
 		// Regular expression used to create links to interfaces
 		var notThisInterface = new RegExp('\\bnsI(?!' + interfaceNameShort + ')\\w*', 'i');
 
-		// Create array of Methods and sort
-		var arrayMethods = [];
-		for (var objMethod in objInterface.methods)
-		{
-			arrayMethods.push(objMethod.methodName);
-//			arrayMethods[arrayMethods.length] = objMethod.methodName;
-		}
-		arrayMethods.sort();
-		// Create array of Attributes and sort
-		var arrayAttributes = [];
-		for (var objAttribute in objInterface.attributes)
-		{
-			arrayAttributes[arrayAttributes.length] = objAttribute.attributeName;
-		}
-		arrayAttributes.sort();
-		// Create array of Constants and DO NOT SORT!!
-		var arrayConstants = [];
-		for (var objConstant in objInterface.constants)
-		{
-			arrayConstants[arrayConstants.length] = objConstant.constantName;
-		}
+		// Start with the last addition to find the last changed Gecko Version
+		objInterface.versionLastChanged = objInterface.versionLastAddition;
 
-// TODO: Code to find the last changed version
-// TODO: Sort methods, attributes
-// TODO: Remember to create links to methods etc in comments
+		// Create array of Methods and do some pre-processing
+		var arrayMethods = [];
+		for each (var objMethod in objInterface.methods)
+		{
+			// Method title (only applies to method)
+			objMethod.methodTitle = '<h3 name="' + objMethod.nameText + '.28.29">' + objMethod.nameText + '()</h3>';
+
+			// Gecko Minversion
+			objMethod.minversionText = '';
+			if (objMethod.versionFirst != objInterface.versionFirst)
+			{
+				objMethod.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objMethod.versionFirst][1] + '")}}';
+				objMethod.methodTitle = '<p>{{method_gecko_minversion("' + objMethod.nameText + '")}}</p>\n';
+			}
+
+			// Check if noscript
+			objMethod.noscriptText = '';
+			if (objMethod.lineIdl.match(/\[noscript\]\s+/i) !== null)
+			{
+				objMethod.noscriptText = ' {{noscript_inline()}}';
+				objMethod.lineIdl = objMethod.lineIdl.replace(/\[noscript\]\s+/, '')
+				objMethod.methodTitle = '<p>{{method_noscript("' + objMethod.nameText + '")}}</p>\n';
+			}
+
+			// Check if obsolete
+			objMethod.obsoleteText = '';
+			if (objMethod.versionLast != objInterface.versionLast)
+			{
+				objMethod.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objMethod.versionLast + 1][1] + '")}}';
+				objMethod.methodTitle = '<p>{{method_obsolete_gecko("' + objMethod.nameText + '")}}</p>\n';
+				// While here update Gecko Last changed Version
+				if (objInterface.versionLastChanged < objMethod.versionLast + 1)
+				{
+					objInterface.versionLastChanged = objMethod.versionLast + 1;
+				}
+			}
+
+			// Check if readonly (only applies to attributes)
+			objMethod.readonlyText = '';
+			if (objMethod.lineIdl.match(/\breadonly\s+/i) !== null)
+			{
+				objMethod.readonlyText = '<strong>Read only.</strong> ';
+				objMethod.lineIdl = objMethod.lineIdl.replace(/readonly\s+/i, '')
+			}
+			arrayMethods.push(objMethod.nameText);
+		}
+		// Sort Methods array
+		arrayMethods.sort();
+
+		// Create array of Attributes
+		var arrayAttributes = [];
+		for each (var objAttribute in objInterface.attributes)
+		{
+			// While here update Gecko Last changed Version
+			if (objAttribute.versionLast < sourceVersionGeko.length - 1 && objInterface.versionLastChanged < objAttribute.versionLast + 1)
+			{
+				objInterface.versionLastChanged = objAttribute.versionLast + 1;
+			}
+
+			arrayAttributes.push(objAttribute.nameText);
+		}
+		// Sort Attributes array
+		arrayAttributes.sort();
+
+		// Create array of Constants, DO NOT SORT!!
+		var arrayConstants = [];
+		for each (var objConstant in objInterface.constants)
+		{
+			// While here update Gecko Last changed Version
+			if (objConstant.versionLast < sourceVersionGeko.length - 1 && objInterface.versionLastChanged < objConstant.versionLast + 1)
+			{
+				objInterface.versionLastChanged = objConstant.versionLast + 1;
+			}
+
+			arrayConstants.push(objConstant.nameText);
+		}
 
 		var stringMDC = '';
 
@@ -373,6 +430,18 @@ this.jsdump(cleanIdl);
 
 		// Add technical review template (Can be removed by author)
 		stringMDC += '{{NeedsTechnicalReview()}}\n';
+
+		// If this is a new interface
+		if (objInterface.versionFirst != 0)
+		{
+		stringMDC += '{{Gecko_minversion_header("' + sourceVersionGeko[objInterface.versionFirst][1] + '")}}';
+		}
+
+		// If this is an obsolete interface
+		if (objInterface.versionLast != sourceVersionGeko.length -1)
+		{
+		stringMDC += '{{obsolete_header("' + sourceVersionGeko[objInterface.versionLast + 1][1] + '")}}';
+		}
 
 		// If the interface has a comment then use it
 		if (objInterface.comment !== '')
@@ -392,7 +461,7 @@ this.jsdump(cleanIdl);
 		}
 
 		// Add iterface status to MDC string
-		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla 1.x", "' + objInterface.scriptable + '")}}</p>\n';
+		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGeko[objInterface.versionLastChanged][1] + '", "' + objInterface.scriptable + '")}}</p>\n';
 
 		// Add iterface inherits to MDC string
 		stringMDC += '<p>Inherits from: {{Interface("' + objInterface.inherits + '")}}</p>\n';
@@ -428,7 +497,30 @@ catch (err) {}
 		stringMDC += (new Array(18 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + objInterface.interfaceName + ');\n';
 		stringMDC += '</pre>\n';
 
+		// Create Method overview table
+		if (arrayMethods.length > 0)
+		{
+			stringMDC += '<h2 name="Method_overview">Method overview</h2>\n';
+			stringMDC += '<table class="standard-table">\n';
+			stringMDC += '<tbody>\n';
+			for (var i=0; i<arrayMethods.length; i++)
+			{
+				var stringMethodLink = '<a href="#' + arrayMethods[i] + '.28.29">' + arrayMethods[i] + '</a>';
+				stringMDC += '<tr>\n';
+				stringMDC += '<td>';
+				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink) + '</code>';
+				stringMDC += objInterface.methods[arrayMethods[i]].noscriptText;
+				stringMDC += objInterface.methods[arrayMethods[i]].minversionText;
+				stringMDC += objInterface.methods[arrayMethods[i]].obsoleteText;
+				stringMDC += '</td>\n';
+				stringMDC += '</tr>\n';
+			}
+			stringMDC += '</tbody>\n';
+			stringMDC += '</table>\n';
+		}
+
 // TODO: actual code to do this here.
+// TODO: Remember to create links to methods etc in comments
 
 		return stringMDC;
 	},
