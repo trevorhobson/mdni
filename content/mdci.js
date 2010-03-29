@@ -173,7 +173,6 @@ var mdci = {
 		var countConstantOrder = 0;
 
 		// Split IDL into lines for processing
-this.jsdump(cleanIdl);
 		var stringIdlLines = cleanIdl.match(/[^\n]*(?:\n|$)/g);
 		var inInterface = false;
 		var inComment = false;
@@ -217,6 +216,7 @@ this.jsdump(cleanIdl);
 					this.objInterfaces[interfaceName].methods = {};
 					this.objInterfaces[interfaceName].interfaceName = interfaceName;
 					this.objInterfaces[interfaceName].versionFirst = sourceVersionGeckoIndex;
+					this.objInterfaces[interfaceName].constantsChanged = false;
 				}
 				this.objInterfaces[interfaceName].path = pathIdl;
 				this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
@@ -307,7 +307,7 @@ this.jsdump(cleanIdl);
 				else // Found a method (Should be nothing else left)
 				{
 					var methodName = stringIdlLineClean.match(/\S+(?=\()/)[0];
-					if (!this.objInterfaces[interfaceName].methods[methodName])
+					if (methodName == 'toString' || !this.objInterfaces[interfaceName].methods[methodName]) // toString is special case
 					{
 						this.objInterfaces[interfaceName].methods[methodName] = {};
 						this.objInterfaces[interfaceName].methods[methodName].nameText = methodName;
@@ -390,7 +390,11 @@ this.jsdump(cleanIdl);
 		regAddCode = new RegExp('\\b(' + arrayAddCode.join('|') + ')\\b', 'gi');
 
 		// Create a regular expression for adding method templates
-		var regAddMethod = new RegExp('\\b(' + arrayMethods.join('|') + ')\\b', 'gi');
+		var regAddMethod = null;
+		if (arrayMethods.length>0)
+		{
+			regAddMethod = new RegExp('\\b(' + arrayMethods.join('|') + ')\\b', 'gi');
+		}
 
 		var stringMDC = '';
 
@@ -502,10 +506,11 @@ catch (err) {}
 
 			for (var i=0; i<arrayAttributes.length; i++)
 			{
+				var stringAttributeCommentPretty = '';
 				// If the attribute has a comment
 				if (objInterface.attributes[arrayAttributes[i]].comment !== '')
 				{
-					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true, objInterface.attributes[arrayAttributes[i]], regInterface, regAddCode, regAddMethod);
+					stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true, objInterface.attributes[arrayAttributes[i]], regInterface, regAddCode, regAddMethod);
 				}
 
 				// Format attribute type
@@ -542,7 +547,7 @@ catch (err) {}
 				if (objInterface.attributes[arrayAttributes[i]].exceptions)
 				{
 					stringMDC += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
-					stringMDC += '<dl>';
+					stringMDC += '<dl>\n';
 					for each (var objException in objInterface.attributes[arrayAttributes[i]].exceptions)
 					{
 						stringMDC += '<dt><code>' + objException.nameText + '</code></dt>\n';
@@ -564,7 +569,7 @@ catch (err) {}
 			stringMDC += '<h2 name="Constants">Constants</h2>\n';
 			stringMDC += '<table class="standard-table">\n';
 			stringMDC += '<tbody>\n';
-			if (objInterface.constantsChanged = false)
+			if (objInterface.constantsChanged == false)
 			{
 				stringMDC += '<tr>\n';
 				stringMDC += '<td class="header">Constant</td>\n';
@@ -598,9 +603,9 @@ catch (err) {}
 				stringMDC += '<tr>\n';
 				stringMDC += '<td><code>' + objInterface.constants[arrayConstants[i]].nameText + '</code></td>\n';
 
-				if (objInterface.constantsChanged = false)
+				if (objInterface.constantsChanged == false)
 				{
-					stringMDCConstants += '<td><code>' + objInterface.constants[arrayConstants[i]].valuePrevious + '</code></td>\n';
+					stringMDC += '<td><code>' + objInterface.constants[arrayConstants[i]].valuePrevious + '</code></td>\n';
 				}
 				else
 				{
@@ -645,37 +650,42 @@ catch (err) {}
 			stringMDC += '<h2 name="Methods">Methods</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
+				// Blank regular expression
+				var regAddCodeExtra = null;
+
 				// Get parameters from idl line
 				var stringMethodParameters = objInterface.methods[arrayMethods[i]].lineIdl.match(/(?:[^\(]*\()(.*)(?:\))/)[1];
 				var arrayMethodParameters = [];
-				var countPatameters = 0;
-				var levelBracket = 0;
-				arrayMethodParameters[0] = '';
-				for (var iParametersChar=0; iParametersChar<stringMethodParameters.length; iParametersChar++)
+				if (stringMethodParameters.length > 0)
 				{
-					var currentChar = stringMethodParameters.charAt(iParametersChar);
-					if (currentChar == '[' || currentChar == '(')
+					var countPatameters = 0;
+					var levelBracket = 0;
+					arrayMethodParameters[0] = '';
+					for (var iParametersChar=0; iParametersChar<stringMethodParameters.length; iParametersChar++)
 					{
-						arrayMethodParameters[countPatameters] += currentChar;
-						levelBracket++;
+						var currentChar = stringMethodParameters.charAt(iParametersChar);
+						if (currentChar == '[' || currentChar == '(')
+						{
+							arrayMethodParameters[countPatameters] += currentChar;
+							levelBracket++;
+						}
+						else if (currentChar == ']' || currentChar == ')')
+						{
+							arrayMethodParameters[countPatameters] += currentChar;
+							levelBracket--;
+						}
+						else if (currentChar == ',' && levelBracket == 0)
+						{
+							arrayMethodParameters[++countPatameters] = '';
+						}
+						else
+						{
+							arrayMethodParameters[countPatameters] += currentChar;
+						}
 					}
-					else if (currentChar == ']' || currentChar == ')')
-					{
-						arrayMethodParameters[countPatameters] += currentChar;
-						levelBracket--;
-					}
-					else if (currentChar == ',' && levelBracket == 0)
-					{
-						arrayMethodParameters[++countPatameters] = '';
-					}
-					else
-					{
-						arrayMethodParameters[countPatameters] += currentChar;
-					}
+					// Create a regular expression for adding code tags to parameters in comments
+					regAddCodeExtra = new RegExp('\\b(' + arrayMethodParameters.join('|') + ')\\b', 'gi');
 				}
-
-				// Create a regular expression for adding code tags to parameters in comments
-				var regAddCodeExtra = new RegExp('\\b(' + arrayMethodParameters.join('|') + ')\\b', 'gi');
 
 				// If the method has a comment
 				var stringMethodCommentPretty = '';
@@ -769,10 +779,10 @@ catch (err) {}
 				stringMDC += '</dl>\n';
 
 				// Show returns
-				stringMDC += '<h6 name="Return_value">Return value</h6>\n';
-				// If there is a return (not void)
 				if (objInterface.methods[arrayMethods[i]].lineIdl.match(/^void\s+/i) === null)
 				{
+					stringMDC += '<h6 name="Return_value">Return value</h6>\n';
+					// If there is a return (not void)
 					stringMDC += '<p>';
 					if (objInterface.methods[arrayMethods[i]].returns)
 					{
@@ -783,10 +793,6 @@ catch (err) {}
 						stringMDC += 'Missing Description'
 					}
 					stringMDC += '</p>\n';
-				}
-				else
-				{
-					stringMDC += '<p>None.</p>\n';
 				}
 
 				// Show exceptions
@@ -814,8 +820,6 @@ catch (err) {}
 
 		stringMDC += '<h2 name="See_also">See also</h2>\n';
 		stringMDC += '<p>&nbsp;</p>\n';
-
-// TODO: Remember to create links to methods etc in comments, where to do this though? Need all info first, should be able to do with commentTidy, but do I want to add all the extra crap to that?
 
 		return stringMDC;
 	},
@@ -983,8 +987,8 @@ catch (err) {}
 		// Convert 'note:'/'note:' to @note
 		sourceCommentB = sourceCommentA.replace(/^\*\s*note:?\s+/gmi, '* @note ');
 
-		// Encode {{ and }} as they will stuff up the templates
-		sourceCommentC = sourceCommentB.replace(/{{/g, '&#123;&#123;').replace(/}}/g, '&#125;&#125;');
+		// Encode { and } as part of not stuffing up templates
+		sourceCommentC = sourceCommentB.replace(/{/g, '&#123;').replace(/}/g, '&#125;');
 
 		var arrayParagraph = [];
 		var currentParagraph = 0;
@@ -1091,6 +1095,17 @@ catch (err) {}
 				// Add missing punctuation
 				arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n|$)/, '$1\.');
 
+				// Escape " that are going to be in notes
+				if (arrayParagraph[i].match(/^@note\s/i) !== null)
+				{
+					arrayParagraph[i] = arrayParagraph[i].replace(/"/g, '\\"');
+				}
+				// wiki.html {{ and }} that are not going to be in notes (should just be able to encode, but wiki converts them back)
+				else
+				{
+					arrayParagraph[i] = arrayParagraph[i].replace(/((?:&#123;){2,}|(?:&#125;){2,})/g, '{{web.html("$1")}}');
+				}
+
 				// Add internal links and code format
 				arrayParagraph[i] = this.commentFormatLink(arrayParagraph[i], regInterface, regAddCode, regAddMethod, regAddCodeExtra)
 
@@ -1101,6 +1116,9 @@ catch (err) {}
 					arrayParagraph[i] = arrayParagraph[i].replace(/{{|}}/g, '');
 					arrayParagraph[i] = '{{note("' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '")}}';
 				}
+
+				// Convert &#123; and &#125; to { and } as they should all be safe now
+				arrayParagraph[i] = arrayParagraph[i].replace(/&#123;/g, '{').replace(/&#125;/g, '}')
 
 				// Non-note @
 				if (arrayParagraph[i].match(/^@\S/) !== null)
@@ -1242,6 +1260,8 @@ catch (err) {}
 		if (regAddMethod)
 		{
 			returnComment = returnComment.replace(regAddMethod, '{{manch("$1")}}');
+			// Sometimes a kindly person has put () after methods
+			returnComment = returnComment.replace(/({{manch\(".*"\)}})\(\)/, '$1');
 		}
 		if (regAddCodeExtra)
 		{
