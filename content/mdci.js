@@ -482,7 +482,6 @@ catch (err) {}
 		// Create Attributes table
 		if (arrayAttributes.length > 0)
 		{
-// TODO: Add exceptions
 			stringMDC += '<h2 name="Attributes">Attributes</h2>\n';
 			stringMDC += '<table class="standard-table">\n';
 			stringMDC += '<tbody>\n';
@@ -529,6 +528,20 @@ catch (err) {}
 				stringMDC += objInterface.attributes[arrayAttributes[i]].noscriptText;
 				stringMDC += objInterface.attributes[arrayAttributes[i]].minversionText;
 				stringMDC += objInterface.attributes[arrayAttributes[i]].obsoleteText;
+
+				// Show exceptions
+				if (objInterface.attributess[arrayAttributes[i]].exceptions)
+				{
+					stringMDC += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
+					stringMDC += '<dl>';
+					for each (var objException in objInterface.attributess[arrayAttributes[i]].exceptions)
+					{
+						stringMDC += '<dt><code>' + objException.nameText + '</code></dt>\n';
+						stringMDC += '<dd>' + objException.description + '</dd>\n';
+					}
+					stringMDC += '</dl>\n';
+				}
+
 				stringMDC += '</td>\n';
 				stringMDC += '</tr>\n';
 			}
@@ -644,6 +657,25 @@ catch (err) {}
 				}
 
 				stringMDC += stringMethodCommentPretty + '\n';
+
+				// Show exceptions
+				stringMDC += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
+				stringMDC += '<dl>';
+				if (objInterface.methods[arrayMethods[i]].exceptions)
+				{
+					for each (var objException in objInterface.methods[arrayMethods[i]].exceptions)
+					{
+						stringMDC += '<dt><code>' + objException.nameText + '</code></dt>\n';
+						stringMDC += '<dd>' + objException.description + '</dd>\n';
+					}
+				}
+				else
+				{
+					stringMDC += '<dt><code>Missing Exception</code></dt>\n';
+					stringMDC += '<dd>Missing Description</dd>\n';
+				}
+				stringMDC += '</dl>\n';
+
 // TODO: Add exceptions, parameters etc
 			}
 		}
