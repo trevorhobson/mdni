@@ -626,6 +626,35 @@ catch (err) {}
 					stringMethodCommentPretty = this.tidyComment(objInterface.methods[arrayMethods[i]].comment, false, objInterface.methods[arrayMethods[i]]);
 				}
 
+				// Get parameters from idl line
+				var stringMethodParameters = objInterface.methods[arrayMethods[i]].lineIdl.match(/(?:[^\(]*\()(.*)(?:\))/)[1];
+				var arrayMethodParameters = [];
+				var countPatameters = 0;
+				var levelBracket = 0;
+				arrayMethodParameters[0] = '';
+				for (var iParametersChar=0; iParametersChar<stringMethodParameters.length; iParametersChar++)
+				{
+					var currentChar = stringMethodParameters.charAt(iParametersChar);
+					if (currentChar == '[' || currentChar == '(')
+					{
+						arrayMethodParameters[countPatameters] += currentChar;
+						levelBracket++;
+					}
+					else if (currentChar == ']' || currentChar == ')')
+					{
+						arrayMethodParameters[countPatameters] += currentChar;
+						levelBracket--;
+					}
+					else if (currentChar == ',' && levelBracket == 0)
+					{
+						arrayMethodParameters[++countPatameters] = '';
+					}
+					else
+					{
+						arrayMethodParameters[countPatameters] += currentChar;
+					}
+				}
+
 				// I have decided that this is the most logical order
 				if (objInterface.methods[arrayMethods[i]].noscriptText !== '') // Noscript
 				{
@@ -658,6 +687,79 @@ catch (err) {}
 
 				stringMDC += stringMethodCommentPretty + '\n';
 
+				// Show syntax
+				stringMDC += '<pre class="eval">\n';
+				stringMDC += objInterface.methods[arrayMethods[i]].lineIdl.match(/[^\(]*\(/);
+				if (arrayMethodParameters.length > 0)
+				{
+					for (var iParameters=0; iParameters<arrayMethodParameters.length; iParameters++)
+					{
+						if (iParameters > 0)
+						{
+							stringMDC += ',';
+						}
+						stringMDC += '\n  ' + arrayMethodParameters[iParameters].replace(/^\s+/, '');
+					}
+					stringMDC += '\n);\n';
+				}
+				else
+				{
+					stringMDC += ');\n';
+				}
+				stringMDC += '</pre>\n';
+
+				// Show parameters
+				stringMDC += '<h6 name="Parameters">Parameters</h6>\n';
+				stringMDC += '<dl>\n';
+				if (arrayMethodParameters.length > 0)
+				{
+					for (var iParameters=0; iParameters<arrayMethodParameters.length; iParameters++)
+					{
+						var stringParameterName = arrayMethodParameters[iParameters].match(/\S*$/)[0];
+						var stringParameterNameLower = stringParameterName.toLowerCase();
+
+						stringMDC += '<dt><code>' + stringParameterName + '</code></dt>\n';
+						stringMDC += '<dd>';
+
+						// If there a description for this parameter then use it
+						if(objInterface.methods[arrayMethods[i]].parameters && objInterface.methods[arrayMethods[i]].parameters[stringParameterNameLower])
+						{
+							stringMDC += objInterface.methods[arrayMethods[i]].parameters[stringParameterNameLower].description;
+						}
+						else
+						{
+							stringMDC += 'Missing Description';
+						}
+						stringMDC += '</dd>\n';
+					}
+				}
+				else
+				{
+					stringMDC += '<p>None.</p>\n';
+				}
+				stringMDC += '</dl>\n';
+
+				// Show returns
+				stringMDC += '<h6 name="Return_value">Return value</h6>\n';
+				// If there is a return (not void)
+				if (objInterface.methods[arrayMethods[i]].lineIdl.match(/^void\s+/i) === null)
+				{
+					stringMDC += '<p>';
+					if (objInterface.methods[arrayMethods[i]].returns)
+					{
+						stringMDC += objInterface.methods[arrayMethods[i]].returns.description;
+					}
+					else
+					{
+						stringMDC += 'Missing Description'
+					}
+					stringMDC += '</p>\n';
+				}
+				else
+				{
+					stringMDC += '<p>None.</p>\n';
+				}
+
 				// Show exceptions
 				stringMDC += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
 				stringMDC += '<dl>';
@@ -675,8 +777,6 @@ catch (err) {}
 					stringMDC += '<dd>Missing Description</dd>\n';
 				}
 				stringMDC += '</dl>\n';
-
-// TODO: Add exceptions, parameters etc
 			}
 		}
 
@@ -1605,7 +1705,7 @@ catch (err) {}
 							objGeneric.exceptions[atNameLower].nameText = atName;
 							objGeneric.exceptions[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if (atType === '@returns') // Returns
+						else if (atType === '@return') // Returns
 						{
 							// If object does not have returns
 							if (!objGeneric.returns)
