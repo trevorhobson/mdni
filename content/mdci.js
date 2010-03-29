@@ -38,7 +38,7 @@
 var mdci = {
 
 	// Production list
-/*
+
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla1.8', '1.8'],
@@ -47,14 +47,14 @@ var mdci = {
 		['mozilla1.9.2', '1.9.2'],
 		['mozilla-central', '1.9.3'],
 	],
-*/
 
+/*
 	// Testing list
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla-central', '1.9.3'],
 	],
-
+*/
 	nsIFilePicker: Components.interfaces.nsIFilePicker,
 	nsILocalFile: new Components.Constructor("@mozilla.org/file/local;1", "nsILocalFile"),
 	nsIConsoleService: Components.classes['@mozilla.org/consoleservice;1'].getService(Components.interfaces.nsIConsoleService),
@@ -100,7 +100,7 @@ var mdci = {
 	{
 		if (document.getElementById("sourceText").value !== '')
 		{
-			this.generateMDC();
+			this.generateMDC(document.getElementById("sourceText").value);
 		}
 		if (document.getElementById("sourceIdl").value !== '')
 		{
@@ -167,7 +167,7 @@ var mdci = {
 
 	},
 
-	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGeko, sourceVersionGekoIndex)
+	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex)
 	{
 		var arrayConstantOrder = [];
 		var countConstantOrder = 0;
@@ -216,12 +216,12 @@ this.jsdump(cleanIdl);
 					this.objInterfaces[interfaceName].constants = {};
 					this.objInterfaces[interfaceName].methods = {};
 					this.objInterfaces[interfaceName].interfaceName = interfaceName;
-					this.objInterfaces[interfaceName].versionFirst = sourceVersionGekoIndex;
+					this.objInterfaces[interfaceName].versionFirst = sourceVersionGeckoIndex;
 				}
 				this.objInterfaces[interfaceName].path = pathIdl;
 				this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
 				this.objInterfaces[interfaceName].inherits = interfaceInherits;
-				this.objInterfaces[interfaceName].versionLast = sourceVersionGekoIndex;
+				this.objInterfaces[interfaceName].versionLast = sourceVersionGeckoIndex;
 				this.objInterfaces[interfaceName].comment = stringComment;
 				stringComment = '';
 				inInterface = true;
@@ -236,7 +236,7 @@ this.jsdump(cleanIdl);
 				// If there is a left over comment log a warning
 				if (stringComment != '')
 				{
-					this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[sourceVersionGekoIndex][1] + ' Comment at end of Interface(' + interfaceName + '): ' + stringComment;
+					this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[sourceVersionGeckoIndex][1] + ' Comment at end of Interface(' + interfaceName + '): ' + stringComment;
 				}
 				stringComment = '';
 				inInterface = false;
@@ -252,19 +252,19 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].attributes[attributeName] = {};
 						this.objInterfaces[interfaceName].attributes[attributeName].nameText = attributeName;
-						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGekoIndex;
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].attributes[attributeName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].attributes[attributeName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].attributes[attributeName].versionLast = sourceVersionGekoIndex;
+					this.objInterfaces[interfaceName].attributes[attributeName].versionLast = sourceVersionGeckoIndex;
 					this.objInterfaces[interfaceName].attributes[attributeName].comment = stringComment;
 					stringComment = '';
 				}
@@ -279,16 +279,16 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].constants[constantName] = {};
 						this.objInterfaces[interfaceName].constants[constantName].nameText = constantName;
-						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGeckoIndex;
 						this.objInterfaces[interfaceName].constants[constantName].values = [];
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].constants[constantName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 						// If the value of the constant changed then let the iterface know so we can create a different constants table
 						// (Why, oh why do we have to do this. Should not a constant be, CONSTANT!!!)
@@ -298,9 +298,9 @@ this.jsdump(cleanIdl);
 						}
 					}
 					this.objInterfaces[interfaceName].constants[constantName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].constants[constantName].versionLast = sourceVersionGekoIndex;
+					this.objInterfaces[interfaceName].constants[constantName].versionLast = sourceVersionGeckoIndex;
 					this.objInterfaces[interfaceName].constants[constantName].comment = stringComment;
-					this.objInterfaces[interfaceName].constants[constantName].values[sourceVersionGekoIndex] = constantValue;
+					this.objInterfaces[interfaceName].constants[constantName].values[sourceVersionGeckoIndex] = constantValue;
 					this.objInterfaces[interfaceName].constants[constantName].valuePrevious = constantValue;
 					stringComment = '';
 				}
@@ -311,19 +311,19 @@ this.jsdump(cleanIdl);
 					{
 						this.objInterfaces[interfaceName].methods[methodName] = {};
 						this.objInterfaces[interfaceName].methods[methodName].nameText = methodName;
-						this.objInterfaces[interfaceName].methods[methodName].versionFirst = sourceVersionGekoIndex;
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGekoIndex;
+						this.objInterfaces[interfaceName].methods[methodName].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].methods[methodName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGeko[this.objInterfaces[interfaceName].methods[methodName].versionLast][1] + ' -> ' + sourceVersionGeko[sourceVersionGekoIndex][1] + ' : ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + ' -> ' + stringIdlLineClean;
+							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].methods[methodName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + ' -> ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].methods[methodName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].methods[methodName].versionLast = sourceVersionGekoIndex;
+					this.objInterfaces[interfaceName].methods[methodName].versionLast = sourceVersionGeckoIndex;
 					this.objInterfaces[interfaceName].methods[methodName].comment = stringComment;
 					stringComment = '';
 				}
@@ -333,7 +333,7 @@ this.jsdump(cleanIdl);
 	},
 
 	// Create the MDC document from an Interface Object
-	createInterfaceMDC: function(objInterface, sourceVersionGeko)
+	createInterfaceMDC: function(objInterface, sourceVersionGecko)
 	{
 		// Set status to default
 		objInterface.status = 'unfrozen';
@@ -341,20 +341,17 @@ this.jsdump(cleanIdl);
 		// Get the 'short' name of the interface (useful for a number of things)
 		var interfaceNameShort = objInterface.interfaceName.replace(/^nsI/, '');
 
-		// Regular expression used to create links to interfaces
-		var notThisInterface = new RegExp('\\bnsI(?!' + interfaceNameShort + ')\\w*', 'i');
-
 		// Start with the last addition to find the last changed Gecko Version
 		objInterface.versionLastChanged = objInterface.versionLastAddition;
 
 		// Create array of Methods and do some pre-processing
-		arrayMethods = this.processObject(objInterface.methods, objInterface, sourceVersionGeko);
+		arrayMethods = this.processObject(objInterface.methods, objInterface, sourceVersionGecko);
 
 		// Sort Methods array
 		arrayMethods.sort();
 
 		// Create array of Attributes
-		var arrayAttributes =  this.processObject(objInterface.attributes, objInterface, sourceVersionGeko);
+		var arrayAttributes =  this.processObject(objInterface.attributes, objInterface, sourceVersionGecko);
 
 		// Sort Attributes array
 		arrayAttributes.sort();
@@ -364,7 +361,7 @@ this.jsdump(cleanIdl);
 		for each (var objConstant in objInterface.constants)
 		{
 			// While here update Gecko Last changed Version
-			if (objConstant.versionLast < sourceVersionGeko.length - 1 && objInterface.versionLastChanged < objConstant.versionLast + 1)
+			if (objConstant.versionLast < sourceVersionGecko.length - 1 && objInterface.versionLastChanged < objConstant.versionLast + 1)
 			{
 				objInterface.versionLastChanged = objConstant.versionLast + 1;
 			}
@@ -383,6 +380,18 @@ this.jsdump(cleanIdl);
 			}
 		}
 
+		// Create regular expression for adding interface templates (anything but this interface)
+		var regInterface = new RegExp('\\b(nsI(?!' + interfaceNameShort + ')\\w*)\\b', 'gi');
+
+		// Create regular expression for adding code tags
+		var arrayAddCode = ['null', objInterface.interfaceName];
+		arrayAddCode = arrayAddCode.concat(arrayAttributes);
+		arrayAddCode = arrayAddCode.concat(arrayConstants);
+		regAddCode = new RegExp('\\b(' + arrayAddCode.join('|') + ')\\b', 'gi');
+
+		// Create a regular expression for adding method templates
+		var regAddMethod = new RegExp('\\b(' + arrayMethods.join('|') + ')\\b', 'gi');
+
 		var stringMDC = '';
 
 		// Add header to MDC string
@@ -394,13 +403,13 @@ this.jsdump(cleanIdl);
 		// If this is a new interface
 		if (objInterface.versionFirst != 0)
 		{
-		stringMDC += '{{Gecko_minversion_header("' + sourceVersionGeko[objInterface.versionFirst][1] + '")}}';
+		stringMDC += '{{Gecko_minversion_header("' + sourceVersionGecko[objInterface.versionFirst][1] + '")}}';
 		}
 
 		// If this is an obsolete interface
-		if (objInterface.versionLast != sourceVersionGeko.length -1)
+		if (objInterface.versionLast != sourceVersionGecko.length -1)
 		{
-		stringMDC += '{{obsolete_header("' + sourceVersionGeko[objInterface.versionLast + 1][1] + '")}}';
+		stringMDC += '{{obsolete_header("' + sourceVersionGecko[objInterface.versionLast + 1][1] + '")}}';
 		}
 
 		// If the interface has a comment then use it
@@ -412,7 +421,7 @@ this.jsdump(cleanIdl);
 				objInterface.status = objInterface.comment.match(/\*\s*@status\s+(\S*)/i)[1].toLowerCase(); // I prefer lower case
 			}
 
-			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false);
+			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false, null, regInterface, regAddCode, regAddMethod);
 
 			if (stringInterfaceCommentPretty !== '')
 			{
@@ -421,7 +430,7 @@ this.jsdump(cleanIdl);
 		}
 
 		// Add iterface status to MDC string
-		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGeko[objInterface.versionLastChanged][1] + '", "' + objInterface.scriptable + '")}}</p>\n';
+		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "' + objInterface.scriptable + '")}}</p>\n';
 
 		// Add iterface inherits to MDC string
 		stringMDC += '<p>Inherits from: {{Interface("' + objInterface.inherits + '")}}</p>\n';
@@ -454,7 +463,7 @@ catch (err) {}
 		stringMDC += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\>. To create an instance, use:</p>\n';
 		stringMDC += '<pre class="eval">\n';
 		stringMDC += 'var ' + interfaceNameShort + ' = Components.classes["@mozilla.org/????????????????????????????"]\n';
-		stringMDC += (new Array(18 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + objInterface.interfaceName + ');\n';
+		stringMDC += (new Array(8 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + objInterface.interfaceName + ');\n';
 		stringMDC += '</pre>\n';
 
 		// Create Method overview table
@@ -496,7 +505,7 @@ catch (err) {}
 				// If the attribute has a comment
 				if (objInterface.attributes[arrayAttributes[i]].comment !== '')
 				{
-					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true, objInterface.attributes[arrayAttributes[i]]);
+					var stringAttributeCommentPretty = this.tidyComment(objInterface.attributes[arrayAttributes[i]].comment, true, objInterface.attributes[arrayAttributes[i]], regInterface, regAddCode, regAddMethod);
 				}
 
 				// Format attribute type
@@ -530,11 +539,11 @@ catch (err) {}
 				stringMDC += objInterface.attributes[arrayAttributes[i]].obsoleteText;
 
 				// Show exceptions
-				if (objInterface.attributess[arrayAttributes[i]].exceptions)
+				if (objInterface.attributes[arrayAttributes[i]].exceptions)
 				{
 					stringMDC += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
 					stringMDC += '<dl>';
-					for each (var objException in objInterface.attributess[arrayAttributes[i]].exceptions)
+					for each (var objException in objInterface.attributes[arrayAttributes[i]].exceptions)
 					{
 						stringMDC += '<dt><code>' + objException.nameText + '</code></dt>\n';
 						stringMDC += '<dd>' + objException.description + '</dd>\n';
@@ -567,13 +576,13 @@ catch (err) {}
 			{
 				stringMDC += '<tr>\n';
 				stringMDC += '<td class="header" rowspan="2">Constant</td>\n';
-				stringMDC += '<td class="header" colspan="' + (objInterface.versionLast - objInterface.versionFirst + 1) + '">Value<br>(Geko version)</td>\n';
+				stringMDC += '<td class="header" colspan="' + (objInterface.versionLast - objInterface.versionFirst + 1) + '">Gecko version</td>\n';
 				stringMDC += '<td class="header" rowspan="2">Description</td>\n';
 				stringMDC += '</tr>\n';
 				stringMDC += '<tr>\n';
 				for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
 				{
-					stringMDC += '<td class="header">' + sourceVersionGeko[j][1] + '</td>\n';
+					stringMDC += '<td class="header">' + sourceVersionGecko[j][1] + '</td>\n';
 				}
 				stringMDC += '</tr>\n';
 			}
@@ -583,7 +592,7 @@ catch (err) {}
 				var stringConstantCommentPretty = '';
 				if (objInterface.constants[arrayConstants[i]].comment !== '')
 				{
-					stringConstantCommentPretty = this.tidyComment(objInterface.constants[arrayConstants[i]].comment, true);
+					stringConstantCommentPretty = this.tidyComment(objInterface.constants[arrayConstants[i]].comment, true, regInterface, regAddCode, regAddMethod);
 				}
 
 				stringMDC += '<tr>\n';
@@ -595,15 +604,32 @@ catch (err) {}
 				}
 				else
 				{
+					var colCount = 1;
+
 					for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
 					{
-						if (objInterface.constants[arrayConstants[i]].values[j] === undefined)
+						if (objInterface.constants[arrayConstants[i]].values[j] === objInterface.constants[arrayConstants[i]].values[j + 1])
 						{
-							objInterface.constants[arrayConstants[i]].values[j] = '';
+							colCount++;
 						}
-						stringMDC += '<td><code>';
-						stringMDC += objInterface.constants[arrayConstants[i]].values[j];
-						stringMDC += '</code></td>\n';
+						else
+						{
+							if (objInterface.constants[arrayConstants[i]].values[j] === undefined)
+							{
+								objInterface.constants[arrayConstants[i]].values[j] = '';
+							}
+							if (colCount > 1)
+							{
+								stringMDC += '<td colspan="' + colCount + '"><code>';
+							}
+							else
+							{
+								stringMDC += '<td><code>';
+							}
+							stringMDC += objInterface.constants[arrayConstants[i]].values[j];
+							stringMDC += '</code></td>\n';
+							colCount = 1;
+						}
 					}
 				}
 				stringMDC += '<td>' + stringConstantCommentPretty + '</td>\n';
@@ -619,13 +645,6 @@ catch (err) {}
 			stringMDC += '<h2 name="Methods">Methods</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
-				// If the method has a comment
-				var stringMethodCommentPretty = '';
-				if (objInterface.methods[arrayMethods[i]].comment !== '')
-				{
-					stringMethodCommentPretty = this.tidyComment(objInterface.methods[arrayMethods[i]].comment, false, objInterface.methods[arrayMethods[i]]);
-				}
-
 				// Get parameters from idl line
 				var stringMethodParameters = objInterface.methods[arrayMethods[i]].lineIdl.match(/(?:[^\(]*\()(.*)(?:\))/)[1];
 				var arrayMethodParameters = [];
@@ -655,37 +674,47 @@ catch (err) {}
 					}
 				}
 
+				// Create a regular expression for adding code tags to parameters in comments
+				var regAddCodeExtra = new RegExp('\\b(' + arrayMethodParameters.join('|') + ')\\b', 'gi');
+
+				// If the method has a comment
+				var stringMethodCommentPretty = '';
+				if (objInterface.methods[arrayMethods[i]].comment !== '')
+				{
+					stringMethodCommentPretty = this.tidyComment(objInterface.methods[arrayMethods[i]].comment, false, objInterface.methods[arrayMethods[i]], regInterface, regAddCode, regAddMethod, regAddCodeExtra);
+				}
+
 				// I have decided that this is the most logical order
 				if (objInterface.methods[arrayMethods[i]].noscriptText !== '') // Noscript
 				{
 					stringMDC += '<p>{{method_noscript("' + objInterface.methods[arrayMethods[i]].nameText + '")}}</p>\n';
 					if (objInterface.methods[arrayMethods[i]].minversionText !== '')
 					{
-						stringMDC += '<p>{{gecko_minversion_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n'
+						stringMDC += '<p>{{gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n'
 					}
 					if (objInterface.methods[arrayMethods[i]].obsoleteText !== '')
 					{
-						stringMDC += '<p>{{obsolete_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
+						stringMDC += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
 					}
 				}
 				else if (objInterface.methods[arrayMethods[i]].minversionText !== '') // Minversion
 				{
-					stringMDC += '<p>{{method_gecko_minversion("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n';
+					stringMDC += '<p>{{method_gecko_minversion("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n';
 					if (objInterface.methods[arrayMethods[i]].obsoleteText !== '')
 					{
-						stringMDC += '<p>{{obsolete_header("' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
+						stringMDC += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n'
 					}
 				}
 				else if (objInterface.methods[arrayMethods[i]].obsoleteText !== '') // Obsolete
 				{
-					stringMDC += '<p>{{method_obsolete_gecko("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGeko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n';
+					stringMDC += '<p>{{method_obsolete_gecko("' + objInterface.methods[arrayMethods[i]].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionLast + 1][1] + '")}}</p>\n';
 				}
 				else // Clean
 				{
 					stringMDC += '<h3 name="' + objInterface.methods[arrayMethods[i]].nameText + '()">' + objInterface.methods[arrayMethods[i]].nameText + '()</h3>\n'
 				}
 
-				stringMDC += stringMethodCommentPretty + '\n';
+				stringMDC += stringMethodCommentPretty;
 
 				// Show syntax
 				stringMDC += '<pre class="eval">\n';
@@ -786,636 +815,47 @@ catch (err) {}
 		stringMDC += '<h2 name="See_also">See also</h2>\n';
 		stringMDC += '<p>&nbsp;</p>\n';
 
-// TODO: Remember to create links to methods etc in comments
+// TODO: Remember to create links to methods etc in comments, where to do this though? Need all info first, should be able to do with commentTidy, but do I want to add all the extra crap to that?
 
 		return stringMDC;
 	},
 
 /***********************************************************
-* Old IDL Manipulation to MDC
+* IDL Manipulation to MDC - From single source
 ***********************************************************/
 
-	XXXgenerateMDC: function()
+	generateMDC: function(sourceStringIdl)
 	{
+		// Create dummy variables
+		var dummyVersionGecko = [['', 'manual']];
+		var dummyMXRPath = '||Unknown||';
 
+		// Reset the Interfaces object
+		this.objInterfaces = {};
+
+		// Reset the Warnings array
+		this.arrayWarnings =[];
+
+		var stringIdlClean = this.cleanupIdl(sourceStringIdl);
+		this.updateInterfaces(stringIdlClean, dummyMXRPath, dummyVersionGecko, 0);
+
+		// Remove existing tabs
 		this.removeInterfaceEditorTabs();
 
-		// Reference the tabs
-		var tabsInterfaceEditor = document.getElementById("tabsInterfaceEditor");
-
-		// Reference the tabpanels
-		var tabpanelsInterfaceEditor = document.getElementById("tabpanelsInterfaceEditor");
-
-		// Get the source
-		var stringSource = document.getElementById("sourceText").value;
-
-		// Clean up the source
-		var stringClean = this.cleanupIdl(stringSource);
-
-		var interfaceStatus = 'unfrozen';
-
-		// Get global doxygen comment
-		var stringGlobalLines = stringClean.match(/.*\n/g);
-		var stringGlobalComment = '';
-		var inCommentDoxygen = false;
-		var inInterface = false;
-		for (var i=0; i<stringGlobalLines.length; i++)
+		// Create Interface MDC and add to tabs
+		for each (var objInterface in this.objInterfaces)
 		{
-			if (stringGlobalLines[i].match(/^\s*\{/) !== null)
-			{
-				inInterface = true;
-				inCommentDoxygen = false;
-			}
-			else if (stringGlobalLines[i].match(/^\s*\}/) !== null)
-			{
-				inInterface = false;
-			}
-			else if (!inInterface && stringGlobalLines[i].match(/^\s*\/\*{2,2}/) !== null)
-			{
-				inCommentDoxygen = true;
-			}
-			else if (!inInterface && stringGlobalLines[i].match(/^\s*\*\//) !== null)
-			{
-				inCommentDoxygen = false;
-				stringGlobalComment += '* \n'; // Tack on an extra line in case there are multiple blocks
-			}
-			else if (inCommentDoxygen && !inInterface)
-			{
-				stringGlobalComment += stringGlobalLines[i];
-			}
+			// Generate string
+			var stringMDC = this.createInterfaceMDC(objInterface, dummyVersionGecko);
+
+			// Add Interface to tabs
+			this.addInterfaceEditorTab(objInterface.interfaceName, stringMDC);
 		}
 
-		var stringGlobalCommentParaPretty = '';
-		if (stringGlobalComment !== '')
+		if (this.arrayWarnings.length > 0)
 		{
-
-			// Turn global doxygen comment into paragraphs
-			var stringGlobalCommentPara = this.getParagraphs(stringGlobalCommentContent);
-
-			// Create pretty paragraphs
-			for (var iGlobalPara=1; iGlobalPara<stringGlobalCommentPara.length; iGlobalPara++)
-			{
-				if (stringGlobalCommentPara[iGlobalPara].match(/\*\s+@(?!note)/) === null) // Ignore @ paragraphs except @note
-				{
-					stringGlobalCommentParaPretty += this.prettyParagraph(stringGlobalCommentPara[iGlobalPara].replace(/^\s+/, ''));
-				}
-				else if (stringGlobalCommentPara[iGlobalPara].match(/\*\s+@status\s+FROZEN/) !== null) // Status is frozen
-				{
-					var interfaceStatus = 'frozen';
-				}
-				else if (stringGlobalCommentPara[iGlobalPara].match(/\*\s+@status\s+UNDER_REVIEW/) !== null) // Status is under review
-				{
-					var interfaceStatus = 'UNDER_REVIEW';
-				}
-			}
+			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
 		}
-
-		// Isolate the interfaces
-		var stringInterfaces = stringClean.match(/\[[^\]]*uuid[^\]]*\]\s*interface[^}]*};/gi);
-
-		// Display the results
-		for (var iInterfaces=0; iInterfaces<stringInterfaces.length; iInterfaces++)
-		{
-			var stringMDC = '';
-			var stringMDCConstants = '';
-
-			var arrayMDCAttributesIndex = [];
-			var integerMDCAttributesIndexCount = 0;
-			var arrayMDCAttributes = [];
-
-			var arrayMDCMethodIndex = [];
-			var integerMDCMethodIndexCount = 0;
-			var arrayMDCMethodOverview = [];
-			var arrayMDCMethods = [];
-
-			var interfaceScriptable = stringInterfaces[iInterfaces].match(/(?:un)?scriptable/i) == 'scriptable' ? 'yes' : 'no';
-			var interfaceName = stringInterfaces[iInterfaces].match(/(?:interface\s)(\S*)/i)[1];
-			var interfaceInherits = stringInterfaces[iInterfaces].match(/(?:interface\s\S*\s+:\s)(\S*)/i)[1];
-
-			// Add header to MDC string
-			stringMDC += '<h1>' + interfaceName + '</h1>\n';
-
-			// Add technical review template (Can be removed my author)
-			stringMDC += '{{NeedsTechnicalReview()}}\n';
-
-			if (stringGlobalCommentParaPretty !== '')
-			{
-				stringMDC += stringGlobalCommentParaPretty;
-			}
-
-			// Add iterface status to MDC string
-			stringMDC += '<p>{{InterfaceStatus("' + interfaceName + '", "?????????????????.idl", "' + interfaceStatus + '", "Mozilla 1.x", "' + interfaceScriptable + '")}}\n</p>';
-
-			// Add iterface inherits to MDC string
-			stringMDC += '<p>Inherits from: {{Interface("' + interfaceInherits + '")}}</p>\n';
-
-			// Add iterface implemented to MDC string
-			var interfaceNameShort = interfaceName.replace(/^nsI/, '');
-			var interfaceNameShortFirst = interfaceNameShort.match(/^./)[0].toLowerCase();
-			interfaceNameShort = interfaceNameShort.replace(/^./, interfaceNameShortFirst);
-			stringMDC += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\>. To create an instance, use:</p>\n';
-			stringMDC += '<pre class="eval">\n';
-			stringMDC += 'var ' + interfaceNameShort + ' = Components.classes["@mozilla.org/????????????????????????????"]\n';
-			stringMDC += (new Array(18 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + interfaceName + ');\n';
-			stringMDC += '</pre>\n';
-
-			// Get Interface content
-			var stringInterfaceContent = stringInterfaces[iInterfaces].match(/(?:{)([^}]*)/)[1];
-
-			// Get clean Interface content
-			var stringInterfaceContentClean = this.cleanContent(stringInterfaceContent);
-
-			// Create Interface Content Sections (Methods, Attributes, Constants and their detail)
-			var stringInterfaceContentLine = stringInterfaceContentClean.match(/.*\n/g);
-			var stringInterfaceContentSection = [];
-			var interfaceSectionCount = -1;
-			var inDoxygenComment = false;
-			var hasDescription = false;
-			for (var iLine=0; iLine<stringInterfaceContentLine.length; iLine++)
-			{
-				if (!inDoxygenComment && stringInterfaceContentLine[iLine].match(/\s*\/\*{2,2}/) !== null) // Start of new comment
-				{
-					interfaceSectionCount++;
-					stringInterfaceContentSection[interfaceSectionCount] = '';
-					inDoxygenComment = true;
-				}
-				else if (stringInterfaceContentLine[iLine].match(/\s*\*\//) !== null) // End of comment
-				{
-					inDoxygenComment = false;
-					hasDescription = true;
-				}
-				else
-				{
-					if (!hasDescription && !inDoxygenComment)
-					{
-						interfaceSectionCount++;
-						stringInterfaceContentSection[interfaceSectionCount] = '* Missing description\n';
-					}
-					stringInterfaceContentSection[interfaceSectionCount] += stringInterfaceContentLine[iLine];
-					hasDescription = false;
-				}
-			}
-
-			// Get the content paragraphs
-			for (var iSection=0; iSection<stringInterfaceContentSection.length; iSection++)
-			{
-				var stringMDCAttributes = '';
-				var stringMDCMethodOverview = '';
-				var stringMDCMethods = '';
-				var stringInterfaceContentSectionPara = this.getParagraphs(stringInterfaceContentSection[iSection]);
-
-				// Create pretty paragraphs
-				var stringInterfaceContentSectionParaPretty = '';
-				for (var iSectionPara=1; iSectionPara<stringInterfaceContentSectionPara.length; iSectionPara++)
-				{
-					if (stringInterfaceContentSectionPara[iSectionPara].match(/\*\s@(?!note)/) === null) // Ignore @ paragraphs except @note
-					{
-						stringInterfaceContentSectionParaPretty += this.prettyParagraph(stringInterfaceContentSectionPara[iSectionPara].replace(/^\s+/, ''));
-					}
-				}
-
-				// Add to attributes/constants/methods tables and content
-				if (stringInterfaceContentSectionPara[0].match(/(?:^|\s+)attribute\s/) !== null) // Attribute
-				{
-					var stringAttributeName = stringInterfaceContentSectionPara[0].match(/\S+(?=;)/)[0];
-					var stringAttributePrefixRaw = stringInterfaceContentSectionPara[0].match(/^.*(?=\s+attribute)/)
-					var stringAttributePrefix = '';
-					var stringAttributeNoscript = '';
-					if (stringAttributePrefixRaw !== null)
-					{
-						if (stringAttributePrefixRaw[0].match(/\[noscript\]/i) !== null)
-						{
-							stringAttributeNoscript = ' {{noscript_inline()}}';
-						}
-						stringAttributePrefix = stringAttributePrefixRaw[0].replace(/\[noscript\]\s+/i, '').replace(/(^\s+|\s+$)/g, '').replace(/readonly/i, ' <strong>Read only.</strong>');
-					}
-					var stringAttributeType = stringInterfaceContentSectionPara[0].match(/(?:^|\s+)attribute\s+(.*)(?=\s+\S+\s*;)/)[1];
-					var stringAttributeTypeLink = stringAttributeType;
-					if (stringAttributeType.match(/(nsI\S+)(?=\b)/) !== null) // Is an nsI type
-					{
-						stringAttributeTypeLink = stringAttributeType.replace(/(nsI\S+)(?=\b)/, '{{Interface("$1")}}')
-					}
-					else // Is another type
-					{
-						stringAttributeTypeLink = '<a href="mks://localhost/en/' + stringAttributeType.replace(/\s+/g, '_') + '" title="en/' + stringAttributeType + '">' + stringAttributeType + '</a>';
-					}
-					// Strip the last 'p' tag from the description so the table does not get extra white space
-					var stringAttributeDescription = stringInterfaceContentSectionParaPretty.replace(/<p>\s*(.*)<\/p>\n*$/, '$1');
-
-					stringMDCAttributes += '<tr>\n';
-					stringMDCAttributes += '<td><code>' + stringAttributeName + '</code></td>\n';
-					stringMDCAttributes += '<td><code>';
-					stringMDCAttributes += stringAttributeTypeLink + '</code></td>\n';
-					stringMDCAttributes += '<td>' + stringAttributeDescription;
-					stringMDCAttributes += stringAttributePrefix += stringAttributeNoscript;
-					stringMDCAttributes += '</td>\n';
-					stringMDCAttributes += '</tr>\n';
-
-					arrayMDCAttributesIndex[integerMDCAttributesIndexCount++] = stringAttributeName.toLowerCase();
-					arrayMDCAttributes[stringAttributeName.toLowerCase()] = stringMDCAttributes;
-				}
-				else if (stringInterfaceContentSectionPara[0].match(/^const/) !== null) // Constant
-				{
-					var stringConstantName = stringInterfaceContentSectionPara[0].match(/\S+(?=\s*\=)/);
-					var stringConstantValue = stringInterfaceContentSectionPara[0].match(/[^\=]+(?=\s*;$)/)[0].replace(/^\s+/, '');
-					// Strip the last 'p' tag fromt the description so the table does not get extra white space
-					var stringConstantDescription = stringInterfaceContentSectionParaPretty.replace(/<p>\s*(.*)<\/p>\n*$/, '$1');
-
-					stringMDCConstants += '<tr>\n';
-					stringMDCConstants += '<td><code>' + stringConstantName + '</code></td>\n';
-					stringMDCConstants += '<td><code>' + stringConstantValue + '</code></td>\n';
-					stringMDCConstants += '<td>' + stringConstantDescription + '</td>\n';
-					stringMDCConstants += '</tr>\n';
-				}
-				else // Method
-				{
-					var stringMethod = stringInterfaceContentSectionPara[0];
-					var stringMethodNoscript = '';
-					var hasNoscript = (stringMethod.match(/\[noscript\]/i) !== null);
-					var stringMethodClean = stringMethod.replace(/\[noscript\]\s+/i, '');
-					var stringMethodName = stringMethodClean.match(/\S+(?=\()/)[0];
-					var stringMethodTitle = '<h3 name="' + stringMethodName + '.28.29">' + stringMethodName + '()</h3>\n';
-					if (hasNoscript)
-					{
-						stringMethodNoscript = ' {{noscript_inline()}}';
-						stringMethodTitle = '<p>{{method_noscript("' + stringMethodName + '")}}</p>\n';
-					}
-					var stringMethodLink = '<a href="#' + stringMethodName + '.28.29">' + stringMethodName + '</a>';
-					stringMDCMethodOverview += '<tr>\n';
-					stringMDCMethodOverview += '<td><code>' + stringMethodClean.replace(/\S+(?=\()/, stringMethodLink) + stringMethodNoscript +'</code></td>\n';
-					stringMDCMethodOverview += '</tr>\n';
-
-					// Parameters
-					stringMDCMethods += stringMethodTitle;
-					stringMDCMethods += stringInterfaceContentSectionParaPretty;
-					stringMDCMethods += '<pre class="eval">\n';
-					stringMDCMethods += ' ' + stringMethodClean.match(/[^\(]*\(/);
-
-
-					var stringMethodCleanParameters = stringMethodClean.match(/(?:[^\(]*\()(.*)(?:\))/)[1];
-
-					var stringMethodParameters = [];
-					var countPatameters = 0;
-					var levelBracket = 0;
-					stringMethodParameters[0] = '';
-					for (var iParametersChar=0; iParametersChar<stringMethodCleanParameters.length; iParametersChar++)
-					{
-						var currentChar = stringMethodCleanParameters.charAt(iParametersChar);
-						if (currentChar == '[' || currentChar == '(')
-						{
-							stringMethodParameters[countPatameters] += currentChar;
-							levelBracket++;
-						}
-						else if (currentChar == ']' || currentChar == ')')
-						{
-							stringMethodParameters[countPatameters] += currentChar;
-							levelBracket--;
-						}
-						else if (currentChar == ',' && levelBracket == 0)
-						{
-							countPatameters++;
-							stringMethodParameters[countPatameters] = '';
-						}
-						else
-						{
-							stringMethodParameters[countPatameters] += currentChar;
-						}
-					}
-
-					var stringMDCMethodsParameters ='';
-					if (stringMethodParameters[0] !== '')
-					{
-						for (var iSectionParameters=0; iSectionParameters<stringMethodParameters.length; iSectionParameters++)
-						{
-							if (iSectionParameters > 0)
-							{
-								stringMDCMethods += ',';
-							}
-							stringMDCMethods += '\n   ' + stringMethodParameters[iSectionParameters].replace(/^\s+/, '');
-							var stringParameter = stringMethodParameters[iSectionParameters].match(/\S*$/)[0];
-							stringMDCMethodsParameters += '<dt><code>' + stringParameter + '</code></dt>\n';
-							stringMDCMethodsParameters += '<dd>';
-							var stringParameterDetail = 'Missing Description';
-							// Find the @param paragraph if it exists
-							var stringParameterNoBracket = stringParameter.replace(/\s*\[[^\]]*\]\s*/g, '');
-							var stringExpressionParameter = new RegExp('\\*\\s*@param\\s+' + stringParameterNoBracket + '\\s+', 'i');
-							for (var iSectionPara=1; iSectionPara<stringInterfaceContentSectionPara.length; iSectionPara++)
-							{
-								if(stringInterfaceContentSectionPara[iSectionPara].match(stringExpressionParameter) !== null)
-								{
-									stringParameterDetail = this.prettyParagraph(stringInterfaceContentSectionPara[iSectionPara].replace(stringExpressionParameter, ''))
-								}
-							}
-							stringMDCMethodsParameters += stringParameterDetail;
-							stringMDCMethodsParameters += '</dd>\n';
-						}
-						stringMDCMethods += '\n );\n';
-					}
-					else
-					{
-						stringMDCMethods += ');\n';
-					}
-					stringMDCMethods += '</pre>\n';
-
-					if (stringMDCMethodsParameters == '')
-					{
-						stringMDCMethodsParameters = '<p>None.</p>';
-					}
-
-					stringMDCMethods += '<h6 name="Parameters">Parameters</h6>\n';
-					stringMDCMethods += '<dl>\n';
-					stringMDCMethods += stringMDCMethodsParameters
-					stringMDCMethods += '</dl>\n';
-
-					// Returns
-					var stringMDCMethodsReturns ='';
-					// If there is a return (not void)
-					if (stringInterfaceContentSectionPara[0].match(/(?:^|\s+)void\s+/i) === null)
-					{
-						var stringReturn = stringInterfaceContentSectionPara[0].match(/(?:\[[^\]]*\])*(.*)(?:\s+\S+\()/)[1];
-						var stringReturnDetail = '<p>Missing Description</p>';
-						for (var iSectionPara=1; iSectionPara<stringInterfaceContentSectionPara.length; iSectionPara++)
-						{
-							if(stringInterfaceContentSectionPara[iSectionPara].match(/\*\s*@returns?\s+/i) !== null)
-							{
-								var stringExpressionReturn = new RegExp('\\*\\s*@returns?\\s+(?:' + stringReturn + '\\s+)?', 'i');
-								stringReturnDetail = this.prettyParagraph(stringInterfaceContentSectionPara[iSectionPara].replace(stringExpressionReturn, ''))
-							}
-						}
-						stringMDCMethodsReturns += stringReturnDetail;
-
-					}
-
-					stringMDCMethods += '<h6 name="Return_value">Return value</h6>\n';
-					if (stringMDCMethodsReturns !== '')
-					{
-						stringMDCMethods += stringMDCMethodsReturns + '\n';
-					}
-					else
-					{
-						stringMDCMethods += '<p>None.</p>\n';
-					}
-
-					// Exceptions
-					var stringMDCMethodsExceptions ='';
-					for (var iSectionPara=1; iSectionPara<stringInterfaceContentSectionPara.length; iSectionPara++)
-					{
-						if(stringInterfaceContentSectionPara[iSectionPara].match(/\*\s*@throws\s+/i) !== null)
-						{
-							var stringException = stringInterfaceContentSectionPara[iSectionPara].match(/\*\s*@throws\s+(\S+)/)[1];
-							var stringExceptionDetail = this.prettyParagraph(stringInterfaceContentSectionPara[iSectionPara].replace(/\*\s*@throws\s+\S+\s+/i, ''))
-							stringMDCMethodsExceptions += '<dt><code>' + stringException + '</code></dt>\n';
-							stringMDCMethodsExceptions += '<dd>' + stringExceptionDetail + '</dd>\n';
-						}
-					}
-
-					stringMDCMethods += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
-					stringMDCMethods += '<dl>';
-					if (stringMDCMethodsExceptions !== '')
-					{
-						stringMDCMethods += stringMDCMethodsExceptions
-					}
-					else
-					{
-						stringMDCMethods += '<dt><code>Missing Exception</code></dt>\n';
-						stringMDCMethods += '<dd>Missing Description</dd>\n';
-					}
-					stringMDCMethods += '</dl>\n';
-
-					arrayMDCMethodIndex[integerMDCMethodIndexCount++] = stringMethodName.toLowerCase();
-					arrayMDCMethodOverview[stringMethodName.toLowerCase()] = stringMDCMethodOverview;
-					arrayMDCMethods[stringMethodName.toLowerCase()] = stringMDCMethods;
-				}
-/*
-				for (var iBuild=0; iBuild<stringInterfaceContentSectionPara.length; iBuild++)
-				{
-					stringMDC += iSection + '-' + iBuild + ' ' + stringInterfaceContentSectionPara[iBuild] + '\n';
-				}*/
-			}
-
-			if (arrayMDCMethodIndex.length > 0)
-			{
-				arrayMDCMethodIndex.sort();
-				stringMDC += '<h2 name="Method_overview">Method overview</h2>\n';
-				stringMDC += '<table class="standard-table">\n';
-				stringMDC += '<tbody>\n';
-				for (var i=0; i<arrayMDCMethodIndex.length; i++)
-				{
-					stringMDC += arrayMDCMethodOverview[arrayMDCMethodIndex[i]];
-				}
-				stringMDC += '</tbody>\n';
-				stringMDC += '</table>\n';
-			}
-
-			if (arrayMDCAttributesIndex.length > 0)
-			{
-				arrayMDCAttributesIndex.sort();
-				stringMDC += '<h2 name="Attributes">Attributes</h2>\n';
-				stringMDC += '<table class="standard-table">\n';
-				stringMDC += '<tbody>\n';
-				stringMDC += '<tr>\n';
-				stringMDC += '<td class="header">Attribute</td>\n';
-				stringMDC += '<td class="header">Type</td>\n';
-				stringMDC += '<td class="header">Description</td>\n';
-				stringMDC += '</tr>\n';
-				for (var i=0; i<arrayMDCAttributesIndex.length; i++)
-				{
-					stringMDC += arrayMDCAttributes[arrayMDCAttributesIndex[i]];
-				}
-				stringMDC += '</tbody>\n';
-				stringMDC += '</table>\n';
-			}
-
-			if (stringMDCConstants !== '')
-			{
-				stringMDC += '<h2 name="Constants">Constants</h2>\n';
-				stringMDC += '<table class="standard-table">\n';
-				stringMDC += '<tbody>\n';
-				stringMDC += '<tr>\n';
-				stringMDC += '<td class="header">Constant</td>\n';
-				stringMDC += '<td class="header">Value</td>\n';
-				stringMDC += '<td class="header">Description</td>\n';
-				stringMDC += '</tr>\n';
-				stringMDC += stringMDCConstants;
-				stringMDC += '</tbody>\n';
-				stringMDC += '</table>\n';
-			}
-
-			if (arrayMDCMethodIndex.length > 0)
-			{
-				stringMDC += '<h2 name="Methods">Methods</h2>\n';
-				for (var i=0; i<arrayMDCMethodIndex.length; i++)
-				{
-					stringMDC += arrayMDCMethods[arrayMDCMethodIndex[i]];
-				}
-			}
-
-			stringMDC += '<h2 name="Remarks">Remarks</h2>\n';
-			stringMDC += '<p>&nbsp;</p>\n';
-
-			stringMDC += '<h2 name="See_also">See also</h2>\n';
-			stringMDC += '<p>&nbsp;</p>\n';
-
-			// Strip Interface template references to self
-			var selfReference = new RegExp('\{\{Interface\\\(\"' + interfaceName + '\"\\\)\}\}', 'gi');
-			var stringMDCOut = stringMDC.replace(selfReference, '<code>' + interfaceName + '</code>');
-
-			// Create new tab
-			var newTab = document.createElement('tab');
-			newTab.setAttribute('label', interfaceName);
-			tabsInterfaceEditor.appendChild(newTab);
-
-			// Create new tabpanel
-			var newTabpanel = document.createElement('tabpanel');
-			newTabpanel.setAttribute('flex', '1');
-			var newTextBox = document.createElement('textbox');
-			newTextBox.setAttribute('newlines', 'pasteintact');
-			newTextBox.setAttribute('multiline', 'true');
-			newTextBox.setAttribute('wrap', 'off');
-			newTextBox.setAttribute('flex', '1');
-			newTextBox.setAttribute('spellcheck', 'true');
-			newTabpanel.appendChild(newTextBox);
-			tabpanelsInterfaceEditor.appendChild(newTabpanel);
-			newTextBox.value = stringMDCOut;
-
-		}
-	},
-
-	cleanContent: function(stringText)
-	{
-		var returnText = stringText;
-
-		return returnText;
-	},
-
-	getParagraphs: function(stringText)
-	{
-
-		var stringTextPara = [];
-		var stringTextLine = stringText.match(/.*\n/g);
-		var integerTextParaCount = 0;
-		var lastBullet = false;
-		for (var iTextLine=0; iTextLine<stringTextLine.length; iTextLine++)
-		{
-			if (stringTextLine[iTextLine].match(/^\*\s*@/) !== null) // Found @ line
-			{
-				integerTextParaCount++;
-				stringTextPara[integerTextParaCount] = stringTextLine[iTextLine].replace(/\n/, '');
-				lastBullet = false;
-			}
-			else if (stringTextLine[iTextLine].match(/^\*\n/) !== null) // Found blank line
-			{
-				integerTextParaCount++;
-				stringTextPara[integerTextParaCount] = '';
-				lastBullet = false;
-			}
-			else if (stringTextLine[iTextLine].match(/^[^\*]+\n/) !== null) // Found object
-			{
-				stringTextPara[0] = stringTextLine[iTextLine].replace(/\n/, '').replace(/(?:\s*)(\(|\))(?:\s*)/g, '$1').replace(/\s+/g, ' '); // Remove new line, spaces around '(', ')', ',' and duplicate spaces
-				lastBullet = false;
-			}
-			else if (integerTextParaCount == 0) // Is first line
-			{
-				integerTextParaCount++;
-				stringTextPara[integerTextParaCount] = stringTextLine[iTextLine].replace(/\n/, '');
-				lastBullet = false;
-			}
-			else if (stringTextLine[iTextLine].match(/^\*\s+(?:o\s|-#{0,1}\s|.[\n|$])/) !== null) // Found list
-			{
-				stringTextPara[integerTextParaCount] += '\n' + stringTextLine[iTextLine].replace(/\n/, '').replace(/(^\*\s*)o/, '$1-'); // Switch 'o' style to '-'
-				lastBullet = true;
-			}
-			else
-			{
-				if (lastBullet)
-				{
-					if (stringTextLine[iTextLine].match(/^\*\s{5,}/) !== null) // Continue bullet
-					{
-						stringTextPara[integerTextParaCount] += stringTextLine[iTextLine].replace(/^\*\s+/, ' ').replace(/\n/, '');
-						lastBullet = true;
-					}
-					else // Continue paragraph
-					{
-						stringTextPara[integerTextParaCount] += '\n' + stringTextLine[iTextLine].replace(/\n/, '');
-						lastBullet = false;
-					}
-				}
-				else
-				{
-					stringTextPara[integerTextParaCount] += stringTextLine[iTextLine].replace(/^\*\s+/, ' ').replace(/\n/, '');
-				}
-			}
-		}
-		return stringTextPara;
-	},
-
-	prettyParagraph: function(stringParagraph)
-	{
-		var returnParagraph = '';
-		var inList = false;
-
-		stringParagraphLine = stringParagraph.match(/.*(\n|$)/g);
-		for (var i=0; i<stringParagraphLine.length; i++)
-		{
-			var isList = (stringParagraphLine[i].match(/^\*\s+-/) !== null);
-
-			// Cleanup the line - strip leading *, add finsihing punctuation if missing, remove newline, multiple spaces and make null lowercase
-			var stringParagraphLineClean = stringParagraphLine[i].replace(/^\*\s+(?:-#?\s)?/, '').replace(/(\d|\w)\n/, '$1\.').replace(/\n/, '').replace(/\s+/g, ' ').replace(/\b(null)\b/gi, 'null');
-
-			// Strip leading [in/out]
-			var stringParagraphLineInOut = stringParagraphLineClean.replace(/^\[(in|out)\]\s*/i, '');
-
-			// Put code tags around x()
-			var stringParagraphLineCode = stringParagraphLineInOut.replace(/(\S+\(\s*\))/g, '<code>$1</code>');
-
-			// Put links to nsIx
-			var stringParagraphLineLink = stringParagraphLineCode.replace(/\b(nsI\S+)(?=\b)/g, '{{Interface("$1")}}');
-
-			// Make first letter caps
-			var stringParagraphLineCaps = this.firstCaps(stringParagraphLineLink);
-
-			// Put code tags around null
-			var stringParagraphLineNull = stringParagraphLineCaps.replace(/\b(null)\b/gi, '<code>$1</code>');
-
-			// Add notes
-			var stringParagraphLineNotes = this.makeNotes(stringParagraphLineNull);
-
-			if (isList) // Do list items first
-			{
-				if (!inList)
-				{
-					returnParagraph += '<ul>\n';
-				}
-				returnParagraph += '<li>' + stringParagraphLineNotes + '</li>\n';
-				inList = true;
-			}
-			else // Should be a regular paragraph
-			{
-				if (inList)
-				{
-					returnParagraph += '</ul>\n';
-					inList = false;
-				}
-				returnParagraph += '<p>' + stringParagraphLineNotes + '</p>\n';
-			}
-		}
-		// Close list if necessary
-		if (inList)
-		{
-			returnParagraph += '</ul>\n';
-		}
-		return returnParagraph;
-	},
-
-	makeNotes: function(stringParagraph)
-	{
-		var returnParagraph = stringParagraph;
-		// Turn note paragraphs into notes
-		if (stringParagraph.match(/^@?note:?\s+/i) !== null)
-		{
-			returnParagraph = '{{note("' + this.firstCaps(stringParagraph.replace(/^@?note:?\s+/i, '')) + '")}}';
-		}
-		return returnParagraph;
 	},
 
 /***********************************************************
@@ -1533,7 +973,7 @@ catch (err) {}
 	},
 
 	// Pretty format comment, optional also add @param/@throws to object
-	tidyComment: function(sourceComment, forTable, objGeneric)
+	tidyComment: function(sourceComment, forTable, objGeneric, regInterface, regAddCode, regAddMethod, regAddCodeExtra)
 	{
 		var stringReturn = '';
 
@@ -1541,7 +981,10 @@ catch (err) {}
 		sourceCommentA = sourceComment.replace(/\bnull\b/gi, 'null');
 
 		// Convert 'note:'/'note:' to @note
-		sourceCommentB = sourceCommentA.replace(/^\*\s*note:?\s+/i, '* @note ');
+		sourceCommentB = sourceCommentA.replace(/^\*\s*note:?\s+/gmi, '* @note ');
+
+		// Encode {{ and }} as they will stuff up the templates
+		sourceCommentC = sourceCommentB.replace(/{{/g, '&#123;&#123;').replace(/}}/g, '&#125;&#125;');
 
 		var arrayParagraph = [];
 		var currentParagraph = 0;
@@ -1550,7 +993,7 @@ catch (err) {}
 		var listLevel = 0;
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
-		var sourceCommentLines = sourceCommentB.match(/[^\n]+(?=\n|$)/g);
+		var sourceCommentLines = sourceCommentC.match(/[^\n]+(?=\n|$)/g);
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
 			// Start new paragraph if a blank line
@@ -1559,7 +1002,7 @@ catch (err) {}
 				// Close any lists
 				while (listLevel > 0)
 				{
-					arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>';
+					arrayParagraph[currentParagraph] += '\n</' + listTracker[listLevel].type + '>';
 					listLevel--;
 				}
 				arrayParagraph[++currentParagraph] = '';
@@ -1570,7 +1013,7 @@ catch (err) {}
 				// Close any lists
 				while (listLevel > 0)
 				{
-					arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>';
+					arrayParagraph[currentParagraph] += '\n</' + listTracker[listLevel].type + '>';
 					listLevel--;
 				}
 				arrayParagraph[++currentParagraph] = sourceCommentLines[i].replace(/\*\s*(?=@)/, '');
@@ -1578,28 +1021,26 @@ catch (err) {}
 			// Check for list
 			else if (sourceCommentLines[i].match(/^\*\s*(?=(-#?\s|\.$))/) !== null)
 			{
-				var listType = sourceCommentLines[i].match(/^\*\s*(-#?(?=\s)|\.(?=$))/)[1].replace(/^\*\s*-#/, 'ol').replace(/^\*\s*-/, 'ul'); // List type or .
+				var listType = sourceCommentLines[i].match(/^\*\s*(-#?(?=\s)|\.(?=$))/)[1].replace(/-#/, 'ol').replace(/-/, 'ul'); // List type or .
 				var levelIndent = sourceCommentLines[i].match(/^\*\s*(?=\S)/).length -1; // Get the indent of the list item
 				// If end of list level '.'
 				if (listType == '.')
 				{
-					do
+					while (levelIndent >= listTracker[listLevel].indent)
 					{
-						arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>\n';
+						arrayParagraph[currentParagraph] += '\n</' + listTracker[listLevel].type + '>\n';
 						listLevel--;
 					}
-					while (levelIndent >= listTracker[listLevel].indent)
 					arrayParagraph[++currentParagraph] = '';
 				}
 				// If the indent is higher than the current indent
-				else if (levelIndent > listTracker[listLevel].indent)
+				else if (levelIndent < listTracker[listLevel].indent)
 				{
-					do
+					while (levelIndent < listTracker[listLevel].indent)
 					{
-						arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>\n';
+						arrayParagraph[currentParagraph] += '\n</' + listTracker[listLevel].type + '>\n';
 						listLevel--;
 					}
-					while (levelIndent > listTracker[listLevel].indent)
 				}
 				// If the indent is deeper than the current indent
 				else if (levelIndent > listTracker[listLevel].indent)
@@ -1608,7 +1049,7 @@ catch (err) {}
 					listTracker[listLevel] = {};
 					listTracker[listLevel].indent = levelIndent;
 					listTracker[listLevel].type = listType;
-					arrayParagraph[currentParagraph] += '<' + listType + '>\n';
+					arrayParagraph[currentParagraph] += '\n<' + listType + '>';
 				}
 				// If the indent is the current indent (use the indent of the higher level just in case...)
 				else if (levelIndent > listTracker[listLevel - 1].indent)
@@ -1616,14 +1057,14 @@ catch (err) {}
 					// If the list type changes
 					if (listTracker[listLevel].type !== listType)
 					{
-						arrayParagraph[currentParagraph] += '</' + listTracker[listLevel].type + '>\n';
+						arrayParagraph[currentParagraph] += '\n</' + listTracker[listLevel].type + '>';
 						listTracker[listLevel].type = listType;
-						arrayParagraph[currentParagraph] += '<' + listType + '>\n';
+						arrayParagraph[currentParagraph] += '\n<' + listType + '>';
 					}
 				}
 				if (listType !== '.')
 				{
-					arrayParagraph[currentParagraph] += '<li>';
+					arrayParagraph[currentParagraph] += '\n<li>';
 					arrayParagraph[currentParagraph] += this.firstCaps(sourceCommentLines[i].replace(/^\*\s*(-#?\s*)/, ''));
 				}
 			}
@@ -1648,11 +1089,16 @@ catch (err) {}
 				arrayParagraph[i] = arrayParagraph[i].replace(/(^\s+|\s+$)/g, '');
 
 				// Add missing punctuation
-				arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n)/, '$1\.');
+				arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n|$)/, '$1\.');
+
+				// Add internal links and code format
+				arrayParagraph[i] = this.commentFormatLink(arrayParagraph[i], regInterface, regAddCode, regAddMethod, regAddCodeExtra)
 
 				// Add note template to notes
 				if (arrayParagraph[i].match(/^@note\s/i) !== null)
 				{
+					// Remove {{ and }} before adding note to allow nested templates
+					arrayParagraph[i] = arrayParagraph[i].replace(/{{|}}/g, '');
 					arrayParagraph[i] = '{{note("' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '")}}';
 				}
 
@@ -1673,7 +1119,7 @@ catch (err) {}
 							arrayParagraph[i] = arrayParagraph[i].replace(/\S+\s+/, '');
 						}
 						// Strip any leading -
-						arrayParagraph[i] = arrayParagraph[i].replace(/-\s*(?=\S)/, '');
+						arrayParagraph[i] = arrayParagraph[i].replace(/^-\s*(?=\S)/, '');
 
 						if (atType === '@param') // Parameter
 						{
@@ -1687,6 +1133,10 @@ catch (err) {}
 							{
 								objGeneric.parameters[atNameLower] = {};
 							}
+
+							// Strip leading in/out from description
+							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in|out|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
+
 							objGeneric.parameters[atNameLower].nameText = atName;
 							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
@@ -1732,12 +1182,14 @@ catch (err) {}
 			{
 				stringReturn += '<p>' + arrayParagraph[i] + '</p>';
 			}
+			stringReturn += '\n';
 		}
+
 		return stringReturn;
 	},
 
 	// Create array of object nameText and pre-process interface
-	processObject: function(objectsGeneric, objInterface, sourceVersionGeko)
+	processObject: function(objectsGeneric, objInterface, sourceVersionGecko)
 	{
 		var arrayGeneric = [];
 		for each (var objGeneric in objectsGeneric)
@@ -1746,7 +1198,7 @@ catch (err) {}
 			objGeneric.minversionText = '';
 			if (objGeneric.versionFirst != objInterface.versionFirst)
 			{
-				objGeneric.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGeko[objGeneric.versionFirst][1] + '")}}';
+				objGeneric.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGecko[objGeneric.versionFirst][1] + '")}}';
 			}
 
 			// Check if noscript
@@ -1761,7 +1213,7 @@ catch (err) {}
 			objGeneric.obsoleteText = '';
 			if (objGeneric.versionLast != objInterface.versionLast)
 			{
-				objGeneric.obsoleteText = ' {{obsolete_inline("' + sourceVersionGeko[objGeneric.versionLast + 1][1] + '")}}';
+				objGeneric.obsoleteText = ' {{obsolete_inline("' + sourceVersionGecko[objGeneric.versionLast + 1][1] + '")}}';
 				// While here update Gecko Last changed Version
 				if (objInterface.versionLastChanged < objGeneric.versionLast + 1)
 				{
@@ -1773,6 +1225,29 @@ catch (err) {}
 		}
 
 		return arrayGeneric;
+	},
+
+	// Create internal links and code format
+	commentFormatLink: function(sourceComment, regInterface, regAddCode, regAddMethod, regAddCodeExtra)
+	{
+		var returnComment = sourceComment;
+		if (regInterface)
+		{
+			returnComment = returnComment.replace(regInterface, '{{interface("$1")}}');
+		}
+		if (regAddCode)
+		{
+			returnComment = returnComment.replace(regAddCode, '<code>$1</code>');
+		}
+		if (regAddMethod)
+		{
+			returnComment = returnComment.replace(regAddMethod, '{{manch("$1")}}');
+		}
+		if (regAddCodeExtra)
+		{
+			returnComment = returnComment.replace(regAddCodeExtra, '<code>$1</code>');
+		}
+		return returnComment;
 	},
 
 /***********************************************************
