@@ -403,7 +403,7 @@ var mdci = {
 		}
 
 		// Create regular expression for adding interface templates (anything but this interface)
-		var regInterface = new RegExp('\\b(nsI(?!' + interfaceNameShort + ')\\w*)\\b', 'gi');
+		var regInterface = new RegExp('\\b(nsI(?!' + interfaceNameShort + '\\b)\\w*)\\b', 'gi');
 
 		// Create regular expression for adding code tags
 		var arrayAddCode = ['null', objInterface.interfaceName];
@@ -456,7 +456,7 @@ var mdci = {
 		}
 
 		// Add iterface status to MDC string
-		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "' + objInterface.scriptable + '")}}</p>\n';
+		stringMDC += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "' + (objInterface.scriptable == true ? 'yes' : 'no') + '")}}</p>\n';
 
 		// Add iterface inherits to MDC string
 		stringMDC += '<p>Inherits from: {{Interface("' + objInterface.inherits + '")}}</p>\n';
@@ -503,7 +503,7 @@ catch (err) {}
 				var stringMethodLink = '<a href="#' + arrayMethods[i] + '()">' + arrayMethods[i] + '</a>';
 				stringMDC += '<tr>\n';
 				stringMDC += '<td>';
-				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink) + '</code>';
+				stringMDC += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '') + '</code>';
 				stringMDC += objInterface.methods[arrayMethods[i]].noscriptText;
 				stringMDC += objInterface.methods[arrayMethods[i]].minversionText;
 				stringMDC += objInterface.methods[arrayMethods[i]].obsoleteText;
@@ -552,7 +552,7 @@ catch (err) {}
 				var stringAttributePrefix = '';
 				if (stringAttributePrefixRaw !== null)
 				{
-					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/readonly/i, ' <strong>Read only.</strong>');
+					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, ' <strong>Read only.</strong>');
 				}
 
 				stringMDC += '<tr>\n';
@@ -776,9 +776,9 @@ catch (err) {}
 
 				// Show parameters
 				stringMDC += '<h6 name="Parameters">Parameters</h6>\n';
-				stringMDC += '<dl>\n';
 				if (arrayMethodParameters.length > 0)
 				{
+					stringMDC += '<dl>\n';
 					for (var iParameters=0; iParameters<arrayMethodParameters.length; iParameters++)
 					{
 						var stringParameterName = arrayMethodParameters[iParameters].match(/\S*$/)[0];
@@ -798,12 +798,12 @@ catch (err) {}
 						}
 						stringMDC += '</dd>\n';
 					}
+					stringMDC += '</dl>\n';
 				}
 				else
 				{
 					stringMDC += '<p>None.</p>\n';
 				}
-				stringMDC += '</dl>\n';
 
 				// Show returns
 				if (objInterface.methods[arrayMethods[i]].lineIdl.match(/^void\s+/i) === null)
