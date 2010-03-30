@@ -304,7 +304,7 @@ var mdci = {
 					this.objInterfaces[interfaceName].constants[constantName].valuePrevious = constantValue;
 					stringComment = '';
 				}
-				else // Found a method (Should be nothing else left)
+				else if (stringIdlLineClean != '') // Found a method (Should be nothing else left, blank line check just in case)
 				{
 					var methodName = stringIdlLineClean.match(/\S+(?=\()/)[0];
 					if (methodName == 'toString' || !this.objInterfaces[interfaceName].methods[methodName]) // toString is special case
@@ -895,6 +895,7 @@ catch (err) {}
 
 		// Strip regular comments, just in case there is one around an interface
 		// Strip non comment lines outside interfaces
+		// Strip code blocks
 		// Add * to doxygen comments that are missing them
 		var stringStripLines = stringStripB.match(/[^\n]*(?:\n|$)/g);
 		var stringStripC = '';
@@ -902,24 +903,32 @@ catch (err) {}
 		var inInterface = false;
 		var inCommentRegular = false;
 		var inCommentDoxygen = false;
+		var inCodeBlock = false;
 		for (var i=0; i<stringStripLines.length; i++)
 		{
-			// If this is the beginning of a comment
-			if (stringStripLines[i].match(/\s*\/\*(?!\*)/) !== null)
+			// If this is the beginning of a code block
+			if (stringStripLines[i].match(/\s*%{/) !== null && !inCommentRegular && !inCommentDoxygen)
+			{
+				inCodeBlock = true;
+			}
+			// If this is the beginning of a regular comment
+			else if (stringStripLines[i].match(/\s*\/\*(?!\*)/) !== null && !inCodeBlock)
 			{
 				inCommentRegular = true;
 			}
-			else if (stringStripLines[i].match(/\s*\/\*{2,2}/) !== null)
+			// If this is the beginning of a doxygen comment
+			else if (stringStripLines[i].match(/\s*\/\*{2,2}/) !== null && !inCodeBlock)
 			{
 				stringStripC += stringStripLines[i];
 				inCommentDoxygen = true;
 			}
-			else if (stringStripLines[i].match(/INTERFACE[^\{]*{/i) !== null)
+			// If this is the beginning of an interface
+			else if (stringStripLines[i].match(/INTERFACE[^\{]*{/i) !== null && !inCodeBlock)
 			{
 				stringStripC += stringStripLines[i];
 				inInterface = true;
 			}
-			else if (!inCommentRegular)
+			else if (!inCommentRegular && !inCodeBlock)
 			{
 				// Add missing * in doxygen comments
 				if (inCommentDoxygen && stringStripLines[i].match(/^\s*\*/) == null)
@@ -955,8 +964,12 @@ catch (err) {}
 				inCommentRegular = false;
 				inCommentDoxygen = false;
 			}
+			if (stringStripLines[i].match(/%\}$/) !== null)
+			{
+				inCodeBlock = false;
+			}
 		}
-
+this.jsdump(stringStripC);
 		// Strip leading spaces
 		var stringStripD = stringStripC.replace(/^\s*/gm, '');
 
