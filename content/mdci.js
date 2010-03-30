@@ -248,6 +248,17 @@ var mdci = {
 				if (stringIdlLineClean.match(/(?:^|\s+)attribute\s/) !== null) // Found an attribute
 				{
 					var attributeName = stringIdlLineClean.match(/\S+(?=;)/)[0];
+					// If there is a comment on the end of the line add it to the comment
+					if (stringIdlLineClean.match(/;\s*\/+/) !== null)
+					{
+						var normalComment = stringIdlLineClean.match(/;\s*(.*)/)[1];
+						// Clean // comment
+						normalComment = normalComment.replace(/\/+\s*/, '')
+						// Add to comment
+						stringComment += '*\n' + normalComment + '\n';
+						// Remove the comment form the idl line
+						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/, ';');
+					}
 					if (!this.objInterfaces[interfaceName].attributes[attributeName])
 					{
 						this.objInterfaces[interfaceName].attributes[attributeName] = {};
@@ -272,6 +283,17 @@ var mdci = {
 				{
 					var constantName = stringIdlLineClean.match(/\S+(?=\s*\=)/)[0];
 					var constantValue = stringIdlLineClean.match(/[^\=]+(?=\s*;)/)[0].replace(/^\s+/, '');
+					// If there is a comment on the end of the line add it to the comment
+					if (stringIdlLineClean.match(/;\s*\/+/) !== null)
+					{
+						var normalComment = stringIdlLineClean.match(/;\s*(.*)/)[1];
+						// Clean // comment
+						normalComment = normalComment.replace(/\/+\s*/, '')
+						// Add to comment
+						stringComment += '*\n' + normalComment + '\n';
+						// Remove the comment form the idl line
+						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/, ';');
+					}
 					// Add to constant order
 					arrayConstantOrder[countConstantOrder++] = constantName;
 
@@ -597,7 +619,7 @@ catch (err) {}
 				var stringConstantCommentPretty = '';
 				if (objInterface.constants[arrayConstants[i]].comment !== '')
 				{
-					stringConstantCommentPretty = this.tidyComment(objInterface.constants[arrayConstants[i]].comment, true, regInterface, regAddCode, regAddMethod);
+					stringConstantCommentPretty = this.tidyComment(objInterface.constants[arrayConstants[i]].comment, true, null, regInterface, regAddCode, regAddMethod);
 				}
 
 				stringMDC += '<tr>\n';
@@ -611,6 +633,15 @@ catch (err) {}
 				{
 					var colCount = 1;
 
+					// Replace undefined with ''
+					for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
+					{
+						if (objInterface.constants[arrayConstants[i]].values[j] === undefined)
+						{
+							objInterface.constants[arrayConstants[i]].values[j] = '';
+						}
+					}
+
 					for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
 					{
 						if (objInterface.constants[arrayConstants[i]].values[j] === objInterface.constants[arrayConstants[i]].values[j + 1])
@@ -619,10 +650,6 @@ catch (err) {}
 						}
 						else
 						{
-							if (objInterface.constants[arrayConstants[i]].values[j] === undefined)
-							{
-								objInterface.constants[arrayConstants[i]].values[j] = '';
-							}
 							if (colCount > 1)
 							{
 								stringMDC += '<td colspan="' + colCount + '"><code>';
