@@ -174,7 +174,7 @@ var mdci = {
 		var countConstantOrder = 0;
 
 		// Split IDL into lines for processing
-		var stringIdlLines = cleanIdl.match(/[^\n]*(?:\n|$)/g);
+		var stringIdlLines = cleanIdl.match(/[^\n]*(?=\n|$)/g);
 		var inInterface = false;
 		var inComment = false;
 		var stringComment = '';
@@ -193,7 +193,7 @@ var mdci = {
 			}
 			else if (inComment) // If in comment, add to comment
 			{
-				stringComment += stringIdlLines[i];
+				stringComment += stringIdlLines[i] + '\n';
 			}
 			else if (stringIdlLines[i].match(/^\[.*uuid\(.*\)\]/i) !== null) // Scriptable line
 			{
@@ -203,6 +203,8 @@ var mdci = {
 			{
 				// Get interface name
 				interfaceName = stringIdlLines[i].match(/^INTERFACE\s+(\S*)/i)[1];
+				// Strip hugging : if necessary
+				interfaceName = interfaceName.replace (/:$/, '');
 				// Get interface inherits from
 				if (stringIdlLines[i].match(/:/) !== null)
 				{
@@ -258,7 +260,7 @@ var mdci = {
 						// Add to comment
 						stringComment += '*\n' + normalComment + '\n';
 						// Remove the comment form the idl line
-						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/, ';');
+						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/gm, ';');
 					}
 					if (!this.objInterfaces[interfaceName].attributes[attributeName])
 					{
@@ -292,7 +294,7 @@ var mdci = {
 						normalComment = normalComment.replace(/\/+\s*/, '')
 						// Add to comment
 						stringComment += '*\n' + normalComment + '\n';
-						// Remove the comment form the idl line
+						// Remove the comment from the idl line
 						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/, ';');
 					}
 					// Add to constant order
@@ -352,7 +354,6 @@ var mdci = {
 				}
 			}
 		}
-		this.objInterfaces[interfaceName].constantOrder = arrayConstantOrder;
 	},
 
 	// Create the MDC document from an Interface Object
@@ -376,10 +377,13 @@ var mdci = {
 		arrayMethods.sort(compareFunc);
 
 		// Create array of Attributes
-		var arrayAttributes =  this.processObject(objInterface.attributes, objInterface, sourceVersionGecko);
+		var arrayAttributes = this.processObject(objInterface.attributes, objInterface, sourceVersionGecko);
 
 		// Sort Attributes array
 		arrayAttributes.sort(compareFunc);
+
+		// Process Constants for min version and obsolete
+		this.processObject(objInterface.constants, objInterface, sourceVersionGecko);
 
 		// Create array of Constants in idl order, then obsolete ones
 		var arrayConstants = objInterface.constantOrder;
@@ -393,7 +397,7 @@ var mdci = {
 			var alreadySorted = false;
 			for (var i=0; i<arrayConstants.length; i++)
 			{
-				if (arrayConstants == objConstant.nameText)
+				if (arrayConstants[i].toLowerCase() == objConstant.nameText.toLowerCase())
 				{
 					alreadySorted = true;
 					break;
@@ -448,6 +452,10 @@ var mdci = {
 			if (objInterface.comment.match(/\*\s*@status\s+\S/i) !== null)
 			{
 				objInterface.status = objInterface.comment.match(/\*\s*@status\s+(\S*)/i)[1].toLowerCase(); // I prefer lower case
+				if (objInterface.status == 'unstable')
+				{
+					objInterface.status = 'unfrozen';
+				}
 			}
 
 			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false, null, regInterface, regAddCode, regAddMethod);
@@ -631,6 +639,12 @@ catch (err) {}
 				if (objInterface.constantsChanged == false)
 				{
 					stringMDC += '<td><code>' + objInterface.constants[arrayConstants[i]].valuePrevious + '</code></td>\n';
+					stringMDC += '<td>';
+					stringMDC += stringConstantCommentPretty;
+					stringMDC += objInterface.constants[arrayConstants[i]].noscriptText;
+					stringMDC += objInterface.constants[arrayConstants[i]].minversionText;
+					stringMDC += objInterface.constants[arrayConstants[i]].obsoleteText;
+					stringMDC += '</td>\n';
 				}
 				else
 				{
@@ -666,8 +680,8 @@ catch (err) {}
 							colCount = 1;
 						}
 					}
+					stringMDC += '<td>' + stringConstantCommentPretty + '</td>\n';
 				}
-				stringMDC += '<td>' + stringConstantCommentPretty + '</td>\n';
 				stringMDC += '</tr>\n';
 			}
 			stringMDC += '</tbody>\n';
