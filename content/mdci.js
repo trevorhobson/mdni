@@ -409,7 +409,7 @@ var mdci = {
 		var regInterface = new RegExp('\\b(nsI(?!' + interfaceNameShort + '\\b)\\w*)\\b', 'gi');
 
 		// Create regular expression for adding code tags
-		var arrayAddCode = ['null', objInterface.interfaceName];
+		var arrayAddCode = ['null', 'true', 'false', objInterface.interfaceName];
 		arrayAddCode = arrayAddCode.concat(arrayAttributes);
 		arrayAddCode = arrayAddCode.concat(arrayConstants);
 		regAddCode = new RegExp('\\b(' + arrayAddCode.join('|') + ')\\b', 'gi');
@@ -1158,8 +1158,8 @@ this.jsdump(stringStripC);
 				// Add note template to notes
 				if (arrayParagraph[i].match(/^@note\s/i) !== null)
 				{
-					// Remove {{ and }} before adding note to allow nested templates
-					arrayParagraph[i] = arrayParagraph[i].replace(/{{|}}/g, '');
+					// Fix templates that are going to be inside notes
+					arrayParagraph[i] = arrayParagraph[i].replace(/{{([^}}]*)}}/g, '" .. $1 .. "');
 					arrayParagraph[i] = '{{note("' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '")}}';
 				}
 
@@ -1199,7 +1199,7 @@ this.jsdump(stringStripC);
 							}
 
 							// Strip leading in/out from description
-							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in|out|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
+							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in\b|out\b|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
 
 							objGeneric.parameters[atNameLower].nameText = atName;
 							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
