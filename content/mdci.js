@@ -118,7 +118,8 @@ var mdci = {
 		this.objInterfaces = {};
 
 		// Reset the Warnings array
-		this.arrayWarnings =[];
+		this.arrayWarnings = [];
+		this.countWarnings = 0;
 
 		// Loop over the Gecko versions
 		for (var i=0; i<this.versionGecko.length; i++)
@@ -357,6 +358,8 @@ var mdci = {
 	// Create the MDC document from an Interface Object
 	createInterfaceMDC: function(objInterface, sourceVersionGecko)
 	{
+		var compareFunc = function compare(first, second) {return first.toLowerCase() > second.toLowerCase();};
+
 		// Set status to default
 		objInterface.status = 'unfrozen';
 
@@ -370,13 +373,13 @@ var mdci = {
 		arrayMethods = this.processObject(objInterface.methods, objInterface, sourceVersionGecko);
 
 		// Sort Methods array
-		arrayMethods.sort();
+		arrayMethods.sort(compareFunc);
 
 		// Create array of Attributes
 		var arrayAttributes =  this.processObject(objInterface.attributes, objInterface, sourceVersionGecko);
 
 		// Sort Attributes array
-		arrayAttributes.sort();
+		arrayAttributes.sort(compareFunc);
 
 		// Create array of Constants in idl order, then obsolete ones
 		var arrayConstants = objInterface.constantOrder;
@@ -991,7 +994,7 @@ catch (err) {}
 				inCommentRegular = false;
 				inCommentDoxygen = false;
 			}
-			if (stringStripLines[i].match(/%\}$/) !== null)
+			if (stringStripLines[i].match(/^\s*%\}/) !== null)
 			{
 				inCodeBlock = false;
 			}
@@ -1030,6 +1033,9 @@ this.jsdump(stringStripC);
 		// Encode { and } as part of not stuffing up templates
 		sourceCommentC = sourceCommentB.replace(/{/g, '&#123;').replace(/}/g, '&#125;');
 
+		// Encode < and >
+		sourceCommentD = sourceCommentC.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 		var arrayParagraph = [];
 		var currentParagraph = 0;
 		arrayParagraph[currentParagraph] = '';
@@ -1037,7 +1043,7 @@ this.jsdump(stringStripC);
 		var listLevel = 0;
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
-		var sourceCommentLines = sourceCommentC.match(/[^\n]+(?=\n|$)/g);
+		var sourceCommentLines = sourceCommentD.match(/[^\n]+(?=\n|$)/g);
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
 			// Start new paragraph if a blank line
