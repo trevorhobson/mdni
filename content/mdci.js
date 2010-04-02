@@ -274,7 +274,8 @@ var mdci = {
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].attributes[attributeName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + ' -> ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].attributes[attributeName].lineIdl = stringIdlLineClean;
@@ -313,7 +314,8 @@ var mdci = {
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].constants[constantName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + ' -> ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 						// If the value of the constant changed then let the iterface know so we can create a different constants table
 						// (Why, oh why do we have to do this. Should not a constant be, CONSTANT!!!)
@@ -344,7 +346,8 @@ var mdci = {
 						// If the line 'signature' changed log a warning
 						if (this.objInterfaces[interfaceName].methods[methodName].lineIdl != stringIdlLineClean)
 						{
-							this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[this.objInterfaces[interfaceName].methods[methodName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + ' -> ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].methods[methodName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].methods[methodName].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 					}
 					this.objInterfaces[interfaceName].methods[methodName].lineIdl = stringIdlLineClean;
