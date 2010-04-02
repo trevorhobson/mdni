@@ -1013,12 +1013,12 @@ catch (err) {}
 				inCodeBlock = false;
 			}
 		}
-this.jsdump(stringStripC);
+
 		// Strip leading spaces
 		var stringStripD = stringStripC.replace(/^\s*/gm, '');
 
-		// Strip newlines after commas in methods
-		var stringStripE = stringStripD.replace(/(^(?!\*).*,)\n(?!\*)/gm, '$1 ');
+		// Strip newlines after commas or brackets in methods
+		var stringStripE = stringStripD.replace(/(^(?!\*).*,|\()\n(?!\*)/gm, '$1 ');
 
 		// Join following comments
 		var stringJoinA = stringStripE.replace(/^\*\/\n\/\**/gm, '*');
@@ -1028,7 +1028,7 @@ this.jsdump(stringStripC);
 
 		// Purge multiple blank comment lines, trailing blank comment lines, and blank comment lines before @ lines
 		var stringPurgeA = stringSwitchA.replace(/\*\n(?=\*(\n|\/|\s*@))/g, '')
-
+this.jsdump(stringPurgeA);
 		return stringPurgeA;
 
 	},
@@ -1058,6 +1058,10 @@ this.jsdump(stringStripC);
 		listTracker[listLevel] = {};
 		listTracker[listLevel].indent = -10;
 		var sourceCommentLines = sourceCommentD.match(/[^\n]+(?=\n|$)/g);
+		if (sourceCommentLines === null)
+		{
+			return stringReturn;
+		}
 		for (var i=0; i<sourceCommentLines.length; i++)
 		{
 			// Start new paragraph if a blank line
