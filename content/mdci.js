@@ -42,7 +42,8 @@ var mdci = {
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla1.8', '1.8'],
-		['mozilla1.8.0', '1.8.0'],
+		['firefox2', '1.8.1'],
+		['firefox', '1.9'],
 		['mozilla1.9.1', '1.9.1'],
 		['mozilla1.9.2', '1.9.2'],
 		['mozilla-central', '1.9.3'],
@@ -1020,11 +1021,14 @@ catch (err) {}
 		// Strip leading spaces
 		var stringStripD = stringStripC.replace(/^\s*/gm, '');
 
-		// Strip newlines after commas or brackets in methods
-		var stringStripE = stringStripD.replace(/(^(?!\*).*,|\()\n(?!\*)/gm, '$1 ');
+		// Strip newlines after commas in methods
+		var stringStripE = stringStripD.replace(/(^(?!\*).*,)\n(?!\*)/gm, '$1 ');
+
+		// Strip newlines after brackets in methods
+		var stringStripF = stringStripE.replace(/(^(?!\*).*\()\n(?!\*)/gm, '$1');
 
 		// Join following comments
-		var stringJoinA = stringStripE.replace(/^\*\/\n\/\**/gm, '*');
+		var stringJoinA = stringStripF.replace(/^\*\/\n\/\**/gm, '*');
 
 		// Switch 'o' style lists to '-' style
 		var stringSwitchA = stringJoinA.replace(/(^\*\s*)o(?=\s)/gm, '$1-');
