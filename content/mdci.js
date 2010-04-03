@@ -122,17 +122,28 @@ var mdci = {
 		this.arrayWarnings = [];
 		this.countWarnings = 0;
 
+		// Reset the progress tab
+		this.resetProgress();
+
+		this.updateProgress('Processing ' + sourceIdl);
+
 		// Loop over the Gecko versions
 		for (var i=0; i<this.versionGecko.length; i++)
 		{
+			// Update progress
+			this.updateProgress('Start ' + this.versionGecko[i][1]);
+			this.updateProgress('Searching mxr');
+
 			var versionGeckoMXRSearchUrl = 'http://mxr.mozilla.org/' + this.versionGecko[i][0] + '/ident?i=' + sourceIdl;
 			var versionGeckoMXRSearchResult = this.readRemoteFile(versionGeckoMXRSearchUrl, 'text');
 			if (versionGeckoMXRSearchResult !== null)
 			{
+
 				var findPath = new RegExp('Defined\\sas\\sa\\sinterface\\sin\\:\\s*<ul>\\s*<li>\\s*<a\\shref="\\/' + this.versionGecko[i][0] + '\\/source\/[^>]*idl">[^<]*', 'gi');
 				var versionGeckoMXRPathPlus = versionGeckoMXRSearchResult.match(findPath);
 				if (versionGeckoMXRPathPlus !== null)
 				{
+					this.updateProgress(' Path found');
 					var versionGeckoMXRPath = versionGeckoMXRPathPlus[0].match(/[^>]*$/);
 					if (versionGeckoMXRPath !== null)
 					{
@@ -140,13 +151,27 @@ var mdci = {
 						var versionGeckoMXRIdlText = this.readRemoteFile(versionGeckoMXRIdlUrl, 'text');
 						if (versionGeckoMXRIdlText !== null)
 						{
+							this.updateProgress('  File found');
 							var versionGeckoMXRIdlTextClean = this.cleanupIdl(versionGeckoMXRIdlText);
 							this.updateInterfaces(versionGeckoMXRIdlTextClean, versionGeckoMXRPath[0], this.versionGecko, i);
+						}
+						else
+						{
+							this.updateProgress('  File NOT found');
 						}
 					}
 
 				}
+				else
+				{
+					this.updateProgress(' Path NOT found');
+				}
 			}
+			else
+			{
+				this.updateProgress(' ERROR - mxr');
+			}
+			this.updateProgress('Finish ' + this.versionGecko[i][1]);
 		}
 
 		// Remove existing tabs
@@ -166,7 +191,7 @@ var mdci = {
 		{
 			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
 		}
-
+		this.updateProgress('Complete ' + sourceIdl);
 	},
 
 	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex)
@@ -1353,7 +1378,7 @@ this.jsdump(stringPurgeA);
 		var tabpanelsInterfaceEditor = document.getElementById("tabpanelsInterfaceEditor");
 
 		// Remove the tabs
-		while (tabsInterfaceEditor.childNodes.length > 1)
+		while (tabsInterfaceEditor.childNodes.length > 2)
 		{
 			tabpanelsInterfaceEditor.removeChild(tabpanelsInterfaceEditor.childNodes[tabsInterfaceEditor.childNodes.length-1]);
 			tabsInterfaceEditor.removeItemAt(tabsInterfaceEditor.childNodes.length-1);
@@ -1385,6 +1410,16 @@ this.jsdump(stringPurgeA);
 		newTabpanel.appendChild(newTextBox);
 		tabpanelsInterfaceEditor.appendChild(newTabpanel);
 		newTextBox.value = tabContent;
+	},
+
+	resetProgress: function()
+	{
+		document.getElementById("progress").value = '';
+	},
+
+	updateProgress: function(updateText)
+	{
+		document.getElementById("progress").value += updateText + '\n';
 	},
 
 	firstCaps: function(stringParagraph)

@@ -46,6 +46,7 @@
 		<tabbox id="tabboxInterfaceEditor" flex="1">
 			<tabs id="tabsInterfaceEditor">
 				<tab label="&tabSource.label;"/>
+				<tab label="&tabProgress.label;"/>
 			</tabs>
 			<tabpanels id="tabpanelsInterfaceEditor" flex="1">
 				<tabpanel id="tabSource" flex="1">
@@ -58,6 +59,9 @@
 						</hbox>
 						<textbox id="sourceText" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 					</vbox>
+				</tabpanel>
+				<tabpanel id="tabProgress" flex="1">
+					<textbox id="progress" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 				</tabpanel>
 			</tabpanels>
 		</tabbox>

@@ -5,3 +5,4 @@
 <!ENTITY generateMDC.label								"Generate...">
 <!ENTITY sourceIdl.label								"idl">
 <!ENTITY tabSource.label								"Source">
+<!ENTITY tabProgress.label								"Progress">
