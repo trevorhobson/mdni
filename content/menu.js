@@ -1,9 +1,9 @@
-var mdciMenu = {
+var mdniMenu = {
 
-	openmdci: function()
+	openmdni: function()
 	{
 		var WindowMediator = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
-		var dialog = WindowMediator.getMostRecentWindow('mozilla:mdciPreferences');
+		var dialog = WindowMediator.getMostRecentWindow('mozilla:mdniPreferences');
 		var instantApply = false;
 		if (dialog)
 		{
@@ -18,6 +18,6 @@ var mdciMenu = {
 		{
 			instantApply = false;
 		}
-		openDialog('chrome://mdci/content/mdci.xul', '_blank', 'chrome,titlebar,toolbar,centerscreen,' + (instantApply ? 'dialog=no' : 'modal'));
+		openDialog('chrome://mdni/content/mdni.xul', '_blank', 'chrome,titlebar,toolbar,centerscreen,' + (instantApply ? 'dialog=no' : 'modal'));
 	}
 };

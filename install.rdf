@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	<Description about="urn:mozilla:install-manifest">
-		<em:id>mdci@trevor.hobson</em:id>
+		<em:id>mdni@trevor.hobson</em:id>
 		<em:version>0.1</em:version>
 		<em:type>2</em:type>
-		<em:name>MDC Interface Documentation Generator</em:name>
-		<em:description>Generate MDC Interface Documentation from IDL files</em:description>
+		<em:name>MDN Interface Documentation Generator</em:name>
+		<em:description>Generate MDN Interface Documentation from IDL files</em:description>
 		<em:creator>Trevor Hobson</em:creator>
 		<em:contributor>Clive Hobson</em:contributor>
-		<em:iconURL>chrome://mdci/skin/icon.png</em:iconURL>
-		<em:optionsURL>chrome://mdci/content/options.xul</em:optionsURL>
+		<em:iconURL>chrome://mdni/skin/icon.png</em:iconURL>
 		<em:updateURL>http://trevor.hobson/update.rdf</em:updateURL>
 		<em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD2vMI1JSKnBrDz7YPB4AUau9YM7sv+XAuB1Z632jDHbIqPa4X1zQT71U+x1cIYBB/5qO2Ow871mKWkPh7NRFh6ohOFSh1tKC71tHwgb8+BiTDgXgW7zl6U7F8nN0cZQbHH8ufxvD0lKs8uQCyX+Ot0wBvnNkEExV4ockLlbQag5wIDAQAB</em:updateKey>
 		<!-- add additional packages here -->

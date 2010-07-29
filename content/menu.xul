@@ -36,18 +36,18 @@
   - ***** END LICENSE BLOCK ***** -->
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
-<overlay id="mdci-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> 
+<overlay id="mdni-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"> 
 
 	<script type="application/x-javascript" src="menu.js"/>
 
 	<!-- Firefox tools menu -->
 	<menupopup id="menu_ToolsPopup">
-		<menuitem label="mdci" class="menuitem-iconic" image="chrome://mdci/skin/icon16.png" insertafter="sanitizeItem,sanitizeSeparator" oncommand="mdciMenu.openmdci();" />
+		<menuitem label="mdni" class="menuitem-iconic" image="chrome://mdni/skin/icon16.png" insertafter="sanitizeItem,sanitizeSeparator" oncommand="mdniMenu.openmdni();" />
 	</menupopup>
 
 	<!-- SeaMonkey tools menu -->
 	<menupopup id="taskPopup">
-		<menuitem label="mdci" class="menuitem-iconic" image="chrome://mdci/skin/icon16.png" insertafter="sanitizeItem,sanitizeSeparator" oncommand="mdciMenu.openmdci();" />
+		<menuitem label="mdni" class="menuitem-iconic" image="chrome://mdni/skin/icon16.png" insertafter="sanitizeItem,sanitizeSeparator" oncommand="mdniMenu.openmdni();" />
 	</menupopup>
 
 </overlay>
