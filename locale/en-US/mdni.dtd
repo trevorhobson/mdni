@@ -1,0 +1,8 @@
+<!ENTITY prefwindow.label								"MDN Interface Documentation Generator">
+<!ENTITY generator.label								"Generator">
+<!ENTITY source.group.caption							"Source IDL">
+<!ENTITY loadIDL.label									"Load...">
+<!ENTITY generateMDN.label								"Generate...">
+<!ENTITY sourceIdl.label								"idl">
+<!ENTITY tabSource.label								"Source">
+<!ENTITY tabProgress.label								"Progress">
