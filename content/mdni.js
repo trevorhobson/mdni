@@ -46,14 +46,15 @@ var mdni = {
 		['firefox', '1.9'],
 		['mozilla1.9.1', '1.9.1'],
 		['mozilla1.9.2', '1.9.2'],
-		['mozilla-central', '2'],
+		['mozilla2.0', '2'],
+		['mozilla-central', '2.1'],
 	],
 
 /*
 	// Testing list
 	versionGecko: [
 		['mozilla1.7', '1.7'],
-		['mozilla-central', '2'],
+		['mozilla-central', '2.1'],
 	],
 */
 	nsIFilePicker: Components.interfaces.nsIFilePicker,
@@ -84,26 +85,8 @@ var mdni = {
 * UI User Events
 ***********************************************************/
 
-	userLoadIDL: function()
-	{
-		var filePicker = Components.classes["@mozilla.org/filepicker;1"].createInstance(this.nsIFilePicker);
-		filePicker.init(window, this.stringBundle.getString("selectIDLTitle"), this.nsIFilePicker.modeGetFile);
-		filePicker.appendFilter('IDL Files', '*.idl');
-		filePicker.appendFilters(this.nsIFilePicker.filterAll);
-		var rv = filePicker.show();
-		if (rv == this.nsIFilePicker.returnOK)
-		{
-			var stringSource = this.readLocalFile(filePicker.file, 'text');
-			document.getElementById("sourceText").value = stringSource;
-		}
-	},
-
 	userGenerateMDN: function()
 	{
-		if (document.getElementById("sourceText").value !== '')
-		{
-			this.generateMDN(document.getElementById("sourceText").value);
-		}
 		if (document.getElementById("sourceIdl").value !== '')
 		{
 			this.generateFromMXR(document.getElementById("sourceIdl").value);
@@ -463,25 +446,22 @@ var mdni = {
 		// Add header to MDN string
 		stringMDN += '<h1>' + objInterface.interfaceName + '</h1>\n';
 
-		// Add technical review template (Can be removed by author)
-		stringMDN += '<p>{{NeedsTechnicalReview()}}</p>\n';
-
 		// If this is a new interface
 		if (objInterface.versionFirst != 0)
 		{
-		stringMDN += '<p>{{Gecko_minversion_header("' + sourceVersionGecko[objInterface.versionFirst][1] + '")}}</p>\n';
+			stringMDN += '<p>{{Gecko_minversion_header("' + sourceVersionGecko[objInterface.versionFirst][1] + '")}}</p>\n';
 		}
 
 		// If this is an obsolete interface
 		if (objInterface.versionLast != sourceVersionGecko.length -1)
 		{
-		stringMDN += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.versionLast + 1][1] + '")}}<p>\n';
+			stringMDN += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.versionLast + 1][1] + '")}}<p>\n';
 		}
 
 		// If the interface has a comment then use it
 		if (objInterface.comment !== '')
 		{
-this.jsdump(objInterface.comment);
+//this.jsdump(objInterface.comment);
 			// Get the status from the comment
 			if (objInterface.comment.match(/\*\s*@status\s+\S/i) !== null)
 			{
@@ -549,6 +529,7 @@ catch (err) {}
 				stringMDN += '<tr>\n';
 				stringMDN += '<td>';
 				stringMDN += '<code>' + objInterface.methods[arrayMethods[i]].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '') + '</code>';
+				stringMDN += objInterface.methods[arrayMethods[i]].notxpcomText;
 				stringMDN += objInterface.methods[arrayMethods[i]].noscriptText;
 				stringMDN += objInterface.methods[arrayMethods[i]].minversionText;
 				stringMDN += objInterface.methods[arrayMethods[i]].obsoleteText;
@@ -597,7 +578,7 @@ catch (err) {}
 				var stringAttributePrefix = '';
 				if (stringAttributePrefixRaw !== null)
 				{
-					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, ' <strong>Read only.</strong>');
+					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, '<strong>Read only.</strong>');
 				}
 
 				stringMDN += '<tr>\n';
@@ -606,6 +587,7 @@ catch (err) {}
 				stringMDN += '<td>'
 				stringMDN += stringAttributeCommentPretty;
 				stringMDN += stringAttributePrefix
+				stringMDN += objInterface.attributes[arrayAttributes[i]].notxpcomText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].noscriptText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].minversionText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].obsoleteText;
@@ -675,6 +657,7 @@ catch (err) {}
 					stringMDN += '<td><code>' + objInterface.constants[arrayConstants[i]].valuePrevious + '</code></td>\n';
 					stringMDN += '<td>';
 					stringMDN += stringConstantCommentPretty;
+					stringMDN += objInterface.constants[arrayConstants[i]].notxpcomText;
 					stringMDN += objInterface.constants[arrayConstants[i]].noscriptText;
 					stringMDN += objInterface.constants[arrayConstants[i]].minversionText;
 					stringMDN += objInterface.constants[arrayConstants[i]].obsoleteText;
@@ -773,9 +756,16 @@ catch (err) {}
 				}
 
 				// I have decided that this is the most logical order
-				if (objInterface.methods[arrayMethods[i]].noscriptText !== '') // Noscript
+				if (objInterface.methods[arrayMethods[i]].notxpcomText !== '' || objInterface.methods[arrayMethods[i]].noscriptText !== '') // Notxpcom or Noscript
 				{
-					stringMDN += '<p>{{method_noscript("' + objInterface.methods[arrayMethods[i]].nameText + '")}}</p>\n';
+					if (objInterface.methods[arrayMethods[i]].notxpcomText !== '') // Notxpcom
+					{
+						stringMDN += '<p>{{method_notxpcom("' + objInterface.methods[arrayMethods[i]].nameText + '")}}</p>\n';
+					}
+					else
+					{
+						stringMDN += '<p>{{method_noscript("' + objInterface.methods[arrayMethods[i]].nameText + '")}}</p>\n';
+					}
 					if (objInterface.methods[arrayMethods[i]].minversionText !== '')
 					{
 						stringMDN += '<p>{{gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethods[i]].versionFirst][1] + '")}}</p>\n'
@@ -1037,6 +1027,8 @@ catch (err) {}
 			{
 				inInterface = false;
 			}
+
+
 			if (stringStripLines[i].match(/\s*\*\//) !== null)
 			{
 				inCommentRegular = false;
@@ -1072,7 +1064,7 @@ catch (err) {}
 		var stringPurgeA = stringPurgeA.replace(/\*\n(?=\*\/)/g, '')
 		// Purge blank comment lines before @ lines
 		var stringPurgeA = stringPurgeA.replace(/\n\*(?=\n\*\s*@)/g, '')
-this.jsdump(stringPurgeA);
+//this.jsdump(stringPurgeA);
 		return stringPurgeA;
 
 	},
@@ -1330,6 +1322,14 @@ this.jsdump(stringPurgeA);
 				objGeneric.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGecko[objGeneric.versionFirst][1] + '")}}';
 			}
 
+			// Check if notxpcom
+			objGeneric.notxpcomText = '';
+			if (objGeneric.lineIdl.match(/\[notxpcom\]\s+/i) !== null)
+			{
+				objGeneric.notxpcomText = ' {{notxpcom_inline()}}';
+				objGeneric.lineIdl = objGeneric.lineIdl.replace(/\[notxpcom\]\s+/, '')
+			}
+
 			// Check if noscript
 			objGeneric.noscriptText = '';
 			if (objGeneric.lineIdl.match(/\[noscript\]\s+/i) !== null)
@@ -1393,7 +1393,7 @@ this.jsdump(stringPurgeA);
 		var tabpanelsInterfaceEditor = document.getElementById("tabpanelsInterfaceEditor");
 
 		// Remove the tabs
-		while (tabsInterfaceEditor.childNodes.length > 2)
+		while (tabsInterfaceEditor.childNodes.length > 1)
 		{
 			tabpanelsInterfaceEditor.removeChild(tabpanelsInterfaceEditor.childNodes[tabsInterfaceEditor.childNodes.length-1]);
 			tabsInterfaceEditor.removeItemAt(tabsInterfaceEditor.childNodes.length-1);
@@ -1434,7 +1434,7 @@ this.jsdump(stringPurgeA);
 
 	updateProgress: function(updateText)
 	{
-		document.getElementById("progress").value += updateText + '\n';
+		document.getElementById("progress").value = updateText + '\n' + document.getElementById("progress").value;
 	},
 
 	firstCaps: function(stringParagraph)

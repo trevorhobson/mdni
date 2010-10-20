@@ -45,23 +45,18 @@
 
 		<tabbox id="tabboxInterfaceEditor" flex="1">
 			<tabs id="tabsInterfaceEditor">
-				<tab label="&tabSource.label;"/>
 				<tab label="&tabProgress.label;"/>
 			</tabs>
 			<tabpanels id="tabpanelsInterfaceEditor" flex="1">
-				<tabpanel id="tabSource" flex="1">
+				<tabpanel id="tabProgress" flex="1">
 					<vbox flex="1">
 						<hbox pack="start" align="baseline">
-							<button label="&loadIDL.label;" oncommand="mdni.userLoadIDL();"/>
-							<button label="&generateMDN.label;" oncommand="mdni.userGenerateMDN();"/>
 							<label value="&sourceIdl.label;" control="sourceIdl" />
 							<textbox id="sourceIdl" wrap="off" flex="1"/>
+							<button label="&generateMDN.label;" oncommand="mdni.userGenerateMDN();"/>
 						</hbox>
-						<textbox id="sourceText" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
+						<textbox id="progress" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 					</vbox>
-				</tabpanel>
-				<tabpanel id="tabProgress" flex="1">
-					<textbox id="progress" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 				</tabpanel>
 			</tabpanels>
 		</tabbox>
