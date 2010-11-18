@@ -46,22 +46,23 @@ var mdni = {
 		['firefox', '1.9'],
 		['mozilla1.9.1', '1.9.1'],
 		['mozilla1.9.2', '1.9.2'],
-		['mozilla2.0', '2'],
-		['mozilla-central', '2.1'],
+//		['mozilla2.0', '2.0'],
+		['mozilla-central', '2.0'],
 	],
 
 /*
 	// Testing list
 	versionGecko: [
 		['mozilla1.7', '1.7'],
-		['mozilla-central', '2.1'],
+		['mozilla-central', '2.0'],
 	],
 */
-	nsIFilePicker: Components.interfaces.nsIFilePicker,
-	nsILocalFile: new Components.Constructor("@mozilla.org/file/local;1", "nsILocalFile"),
 	nsIConsoleService: Components.classes['@mozilla.org/consoleservice;1'].getService(Components.interfaces.nsIConsoleService),
 
 	nsIDOMSerializer: Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer),
+
+	nsIScriptableUnicodeConverter: Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter),
+	nsICryptoHash: Components.classes["@mozilla.org/security/hash;1"].createInstance(Components.interfaces.nsICryptoHash),
 
 	prefmdni: Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService).getBranch("extensions.mdni."),
 	prefDebug: Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefService).getBranch("extensions.mdni.debug."),
@@ -77,6 +78,7 @@ var mdni = {
 
 	init: function()
 	{
+		this.nsIScriptableUnicodeConverter.charset = "UTF-8";
 		this.stringBundle = document.getElementById('mdniStrings');
 	},
 
@@ -137,7 +139,7 @@ var mdni = {
 						{
 							this.updateProgress('  File read');
 							var versionGeckoMXRIdlTextClean = this.cleanupIdl(versionGeckoMXRIdlText);
-							this.updateInterfaces(versionGeckoMXRIdlTextClean, versionGeckoMXRPath[0], this.versionGecko, i);
+							this.updateInterfaces(versionGeckoMXRIdlTextClean, versionGeckoMXRPath[0], this.versionGecko, i, sourceIdl);
 						}
 						else
 						{
@@ -181,15 +183,16 @@ var mdni = {
 		this.updateProgress('Complete ' + sourceIdl);
 	},
 
-	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex)
+	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex, sourceIdl)
 	{
 		var arrayConstantOrder = [];
 		var countConstantOrder = 0;
-
+this.jsdump(cleanIdl);
 		// Split IDL into lines for processing
 		var stringIdlLines = cleanIdl.match(/[^\n]*(?=\n|$)/g);
 		var inInterface = false;
 		var inComment = false;
+		var isWanted = false; // Are we dealing with an interface that we actually want?
 		var stringComment = '';
 		var interfaceScriptable = false;
 		var interfaceName = '';
@@ -216,49 +219,72 @@ var mdni = {
 			{
 				// Get interface name
 				interfaceName = stringIdlLines[i].match(/^INTERFACE\s+(\S*)/i)[1];
-				// Strip hugging : if necessary
-				interfaceName = interfaceName.replace (/:$/, '');
-				// Get interface inherits from
-				if (stringIdlLines[i].match(/:/) !== null)
+
+				// Check if we want to keep this interface (is the one we are after)
+				if (interfaceName == sourceIdl)
 				{
-					interfaceInherits = stringIdlLines[i].match(/:\s*([^(\s|{)]*)/)[1];
+					isWanted = true;
+
+					// Strip hugging : if necessary
+					interfaceName = interfaceName.replace (/:$/, '');
+					// Get interface inherits from
+					if (stringIdlLines[i].match(/:/) !== null)
+					{
+						interfaceInherits = stringIdlLines[i].match(/:\s*([^(\s|{)]*)/)[1];
+					}
+					// If object for this interface does not exist then create it
+					if (!this.objInterfaces[interfaceName])
+					{
+						this.objInterfaces[interfaceName] = {};
+						this.objInterfaces[interfaceName].attributes = {};
+						this.objInterfaces[interfaceName].constants = {};
+						this.objInterfaces[interfaceName].methods = {};
+						this.objInterfaces[interfaceName].interfaceName = interfaceName;
+						this.objInterfaces[interfaceName].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
+						this.objInterfaces[interfaceName].constantsChanged = false;
+					}
+					this.objInterfaces[interfaceName].path = pathIdl;
+					this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
+					this.objInterfaces[interfaceName].inherits = interfaceInherits;
+					this.objInterfaces[interfaceName].versionLast = sourceVersionGeckoIndex;
+					this.objInterfaces[interfaceName].comment = stringComment;
 				}
-				// If object for this interface does not exist then create it
-				if (!this.objInterfaces[interfaceName])
+				else
 				{
-					this.objInterfaces[interfaceName] = {};
-					this.objInterfaces[interfaceName].attributes = {};
-					this.objInterfaces[interfaceName].constants = {};
-					this.objInterfaces[interfaceName].methods = {};
-					this.objInterfaces[interfaceName].interfaceName = interfaceName;
-					this.objInterfaces[interfaceName].versionFirst = sourceVersionGeckoIndex;
-					this.objInterfaces[interfaceName].constantsChanged = false;
+					isWanted = false;
 				}
-				this.objInterfaces[interfaceName].path = pathIdl;
-				this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
-				this.objInterfaces[interfaceName].inherits = interfaceInherits;
-				this.objInterfaces[interfaceName].versionLast = sourceVersionGeckoIndex;
-				this.objInterfaces[interfaceName].comment = stringComment;
 				stringComment = '';
 				inInterface = true;
 			}
 			else if (stringIdlLines[i].match(/^};/) !== null) // End of interface
 			{
-				// Add constant array to interface
-				this.objInterfaces[interfaceName].constantOrder = arrayConstantOrder;
-				// Reset constant order array
-				arrayConstantOrder = [];
-				countConstantOrder = 0;
-				// If there is a left over comment log a warning
-				if (stringComment != '')
+				if (isWanted == true)
 				{
-					this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[sourceVersionGeckoIndex][1] + ' Comment at end of Interface(' + interfaceName + '): ' + stringComment;
+					// Add constant array to interface
+					this.objInterfaces[interfaceName].constantOrder = arrayConstantOrder;
+					// Reset constant order array
+					arrayConstantOrder = [];
+					countConstantOrder = 0;
+					// If there is a left over comment log a warning
+					if (stringComment != '')
+					{
+						this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[sourceVersionGeckoIndex][1] + ' Comment at end of Interface(' + interfaceName + '): ' + stringComment;
+					}
+					stringComment = '';
+					inInterface = false;
+					// No use processing further if we have found the interface we are after
+					break;
 				}
-				stringComment = '';
-				inInterface = false;
 			}
 			else if (inInterface) // Attributes, Constants and Methods are in Interface
 			{
+				// Continue to next line now if we are not in a wanted interface
+				if (isWanted == false)
+				{
+					continue;
+				}
+
 				// Create a clean line for processing, normalise white space, remove space before trailing ; and any (
 				var stringIdlLineClean = stringIdlLines[i].replace(/\s+/g, ' ').replace(/\s+(?=(;$|\())/, '')
 				if (stringIdlLineClean.match(/(?:^|\s+)attribute\s/) !== null) // Found an attribute
@@ -346,7 +372,17 @@ var mdni = {
 				}
 				else if (stringIdlLineClean != '') // Found a method (Should be nothing else left, blank line check just in case)
 				{
+					// Sometimes kindly souls decide to break methods in annoying places so may have to shove this line at the beginning of the next
+					if (!stringIdlLineClean.match(/\);{0,1}$/) && i<stringIdlLines.length)
+					{
+						stringIdlLines[i+1] = stringIdlLineClean + ' ' + stringIdlLines[i+1];
+						this.jsdump(stringIdlLines[i+1]);
+						continue;
+					}
+
 					var methodName = stringIdlLineClean.match(/\S+(?=\()/)[0];
+this.jsdump(methodName);
+this.stringHash(methodName);
 					if (methodName == 'toString' || !this.objInterfaces[interfaceName].methods[methodName]) // toString is special case
 					{
 						this.objInterfaces[interfaceName].methods[methodName] = {};
@@ -446,32 +482,27 @@ var mdni = {
 		// Add header to MDN string
 		stringMDN += '<h1>' + objInterface.interfaceName + '</h1>\n';
 
+		// Add iterface summary to MDN string
+		stringMDN += '<p>{{IFSummary("' + objInterface.path + '", "' + objInterface.inherits + '", "' + (objInterface.scriptable == true ? 'Scriptable' : 'Not scriptable') + '", "' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "??? Add brief description of Interface here! ???"';
+		
 		// If this is a new interface
 		if (objInterface.versionFirst != 0)
 		{
-			stringMDN += '<p>{{Gecko_minversion_header("' + sourceVersionGecko[objInterface.versionFirst][1] + '")}}</p>\n';
+			stringMDN += ', "' + sourceVersionGecko[objInterface.versionFirst][1] + '"';
 		}
 
 		// If this is an obsolete interface
 		if (objInterface.versionLast != sourceVersionGecko.length -1)
 		{
-			stringMDN += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.versionLast + 1][1] + '")}}<p>\n';
+			// First comma is for deprecated
+			stringMDN += ' , "' + sourceVersionGecko[objInterface.versionLast + 1][1] + '"';
 		}
 
-		// If the interface has a comment then use it
+		stringMDN += ')}}</p>\n';
+
+		// If the interface has a comment then make it pretty and add it to the MDN string (May be too long/complex to put in IFSummary)
 		if (objInterface.comment !== '')
 		{
-//this.jsdump(objInterface.comment);
-			// Get the status from the comment
-			if (objInterface.comment.match(/\*\s*@status\s+\S/i) !== null)
-			{
-				objInterface.status = objInterface.comment.match(/\*\s*@status\s+(\S*)/i)[1].toLowerCase(); // I prefer lower case
-				if (objInterface.status == 'unstable')
-				{
-					objInterface.status = 'unfrozen';
-				}
-			}
-
 			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false, null, regInterface, regAddCode, regAddMethod);
 
 			if (stringInterfaceCommentPretty !== '')
@@ -479,12 +510,6 @@ var mdni = {
 				stringMDN += stringInterfaceCommentPretty;
 			}
 		}
-
-		// Add iterface status to MDN string
-		stringMDN += '<p>{{InterfaceStatus("' + objInterface.interfaceName + '", "' + objInterface.path + '", "' + objInterface.status + '", "Mozilla ' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "' + (objInterface.scriptable == true ? 'yes' : 'no') + '")}}</p>\n';
-
-		// Add iterface inherits to MDN string
-		stringMDN += '<p>Inherits from: {{Interface("' + objInterface.inherits + '")}}</p>\n';
 
 		// Add iterface implemented to MDN string
 		var interfaceNameShortFirst = interfaceNameShort.match(/^./)[0].toLowerCase();
@@ -518,7 +543,7 @@ catch (err) {}
 		stringMDN += '</pre>\n';
 
 		// Create Method overview table
-		if (arrayMethods.length > 0)
+		if (arrayMethods && arrayMethods.length > 0)
 		{
 			stringMDN += '<h2 name="Method_overview">Method overview</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
@@ -541,7 +566,7 @@ catch (err) {}
 		}
 
 		// Create Attributes table
-		if (arrayAttributes.length > 0)
+		if (arrayAttributes && arrayAttributes.length > 0)
 		{
 			stringMDN += '<h2 name="Attributes">Attributes</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
@@ -613,7 +638,7 @@ catch (err) {}
 		}
 
 		// Create Constants table
-		if (arrayConstants.length > 0)
+		if (arrayConstants && arrayConstants.length > 0)
 		{
 			stringMDN += '<h2 name="Constants">Constants</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
@@ -706,7 +731,7 @@ catch (err) {}
 		}
 
 		// Create Methods
-		if (arrayMethods.length > 0)
+		if (arrayMethods && arrayMethods.length > 0)
 		{
 			stringMDN += '<h2 name="Methods">Methods</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
@@ -887,7 +912,7 @@ catch (err) {}
 		stringMDN += '<p>&nbsp;</p>\n';
 
 		stringMDN += '<h2 name="See_also">See also</h2>\n';
-		stringMDN += '<p>&nbsp;</p>\n';
+		stringMDN += '<ul>\n  <li>&nbsp;</li>\n</ul>\n';
 
 		return stringMDN;
 	},
@@ -1060,8 +1085,10 @@ catch (err) {}
 
 		// Purge multiple blank comment lines
 		var stringPurgeA = stringSwitchA.replace(/(\*\n)+(?=\*\n)/g, '')
+
 		// Purge trailing blank comment lines
 		var stringPurgeA = stringPurgeA.replace(/\*\n(?=\*\/)/g, '')
+
 		// Purge blank comment lines before @ lines
 		var stringPurgeA = stringPurgeA.replace(/\n\*(?=\n\*\s*@)/g, '')
 //this.jsdump(stringPurgeA);
@@ -1477,37 +1504,38 @@ catch (err) {}
 		}
 	},
 
+	// Create hash of a string (used to prevent names causing problems)
+	stringHash: function(stringToHash)
+	{
+		// result is an out parameter,
+		// result.value will contain the array length
+		var result = {};
+		// data is an array of bytes
+		var data = this.nsIScriptableUnicodeConverter.convertToByteArray(stringToHash, result);
+		this.nsICryptoHash.init(this.nsICryptoHash.MD5);
+		this.nsICryptoHash.update(data, data.length);
+		var hash = this.nsICryptoHash.finish(true);
+
+		return hash;
+/*
+		// return the two-digit hexadecimal code for a byte
+		function toHexString(charCode)
+		{
+			return ("0" + charCode.toString(16)).slice(-2);
+		}
+
+		// convert the binary hash data to a hex string.
+		var s = [toHexString(hash.charCodeAt(i)) for (i in hash)].join("");
+		// s now contains your hash in hex: should be
+		// 5eb63bbbe01eeed093cb22bb8f5acdc3
+
+this.jsdump(s);
+*/
+	},
+
 /***********************************************************
 * Functions to read files
 ***********************************************************/
-
-	// Read a local file
-	// returnType - xml or text
-	readLocalFile: function(objectFile, returnType)
-	{
-		if (objectFile.exists() && objectFile.isFile())
-		{
-			var xmlPath = 'file://' + objectFile.path;
-			var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
-			req.open("GET", xmlPath, false); 
-			req.send(null);
-			if (req.status == 0)
-			{
-				if (returnType == 'xml')
-				{
-					return req.responseXML;
-				}
-				else
-				{
-					return req.responseText;
-				}
-			}
-			else
-			{
-				this.debugTrace('readLocalFile', 900, 'status ' + req.status + ' file ' + objectFile.path);
-			}
-		}
-	},
 
 	// Read remote file (synchronous)
 	// returnType - xml or text
@@ -1522,23 +1550,6 @@ catch (err) {}
 			{
 				return req.responseXML;
 			}
-/*			else if  (returnType == 'html')
-			{
-				// If it is properly formed xml then use that
-				if (req.responseXML !== null)
-				{
-					return req.responseXML;
-				}
-				else
-				{
-					responseHTML = Components.classes["@mozilla.org/xml/xml-document;1"].createInstance(Components.interfaces.nsIDOMDocument);
-					var nsIScriptableUnescapeHTML = Components.classes["@mozilla.org/feed-unescapehtml;1"].getService(Components.interfaces.nsIScriptableUnescapeHTML);
-					unicodeResponseText = nsIScriptableUnescapeHTML.unescape(req.responseText);
-					responseHTML.appendChild(nsIScriptableUnescapeHTML.parseFragment(unicodeResponseText, false, '', responseHTML.documentElement));
-					return responseHTML;
-				}
-			}
-*/
 			else
 			{
 				return req.responseText;

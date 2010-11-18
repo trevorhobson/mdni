@@ -2,10 +2,10 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	<Description about="urn:mozilla:install-manifest">
 		<em:id>mdni@trevor.hobson</em:id>
-		<em:version>0.4</em:version>
+		<em:version>0.5.3</em:version>
 		<em:type>2</em:type>
 		<em:name>MDN Interface Documentation Generator</em:name>
-		<em:description>Generate MDN Interface Documentation from MXR IDL files</em:description>
+		<em:description>Generate MDN Interface Documentation from MXR IDL files.</em:description>
 		<em:creator>Trevor Hobson</em:creator>
 		<em:contributor>Clive Hobson</em:contributor>
 		<em:iconURL>chrome://mdni/skin/icon.png</em:iconURL>
