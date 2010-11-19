@@ -38,7 +38,7 @@
 var mdni = {
 
 	// Production list
-
+/*
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla1.8', '1.8'],
@@ -49,14 +49,14 @@ var mdni = {
 //		['mozilla2.0', '2.0'],
 		['mozilla-central', '2.0'],
 	],
+*/
 
-/*
 	// Testing list
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla-central', '2.0'],
 	],
-*/
+
 	nsIConsoleService: Components.classes['@mozilla.org/consoleservice;1'].getService(Components.interfaces.nsIConsoleService),
 
 	nsIDOMSerializer: Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer),
@@ -225,20 +225,31 @@ var mdni = {
 		// Remove existing tabs
 		this.removeInterfaceEditorTabs();
 
+		this.debugTrace('generateFromMXR', 980, 'removeInterfaceEditorTabs : complete');
+
 		// Create Interface MDN and add to tabs
 		for each (var objInterface in this.objInterfaces)
 		{
+			this.debugTrace('generateFromMXR', 985, 'Start adding an interface tab');
+
 			// Generate string
 			var stringMDN = this.createInterfaceMDN(objInterface, this.versionGecko);
 
 			// Add Interface to tabs
 			this.addInterfaceEditorTab(objInterface.interfaceName, stringMDN);
+
+			this.debugTrace('generateFromMXR', 985, 'Finish adding an interface tab');
 		}
+
+		this.debugTrace('generateFromMXR', 985, 'Start adding warning tab');
 
 		if (this.arrayWarnings.length > 0)
 		{
 			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
 		}
+
+		this.debugTrace('generateFromMXR', 985, 'Finish adding warning tab');
+
 		this.updateProgress('Complete ' + sourceIdl);
 	},
 
@@ -485,6 +496,7 @@ var mdni = {
 	// Create the MDN document from an Interface Object
 	createInterfaceMDN: function(objInterface, sourceVersionGecko)
 	{
+		this.debugTrace('createInterfaceMDN', 940, 'Start');
 		var compareFunc = function compare(first, second) {return first.toLowerCase() > second.toLowerCase();};
 
 		// Set status to default
@@ -616,6 +628,8 @@ catch (err) {}
 		stringMDN += (new Array(8 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + objInterface.interfaceName + ');\n';
 		stringMDN += '</pre>\n';
 
+		this.debugTrace('createInterfaceMDN', 945, 'Before method overview');
+
 		// Create Method overview table
 		if (arrayMethods && arrayMethods.length > 0)
 		{
@@ -639,6 +653,8 @@ catch (err) {}
 			stringMDN += '</tbody>\n';
 			stringMDN += '</table>\n';
 		}
+
+		this.debugTrace('createInterfaceMDN', 945, 'Before attributes');
 
 		// Create Attributes table
 		if (arrayAttributes && arrayAttributes.length > 0)
@@ -711,6 +727,8 @@ catch (err) {}
 			stringMDN += '</tbody>\n';
 			stringMDN += '</table>\n';
 		}
+
+		this.debugTrace('createInterfaceMDN', 945, 'Before constants');
 
 		// Create Constants table
 		if (arrayConstants && arrayConstants.length > 0)
@@ -804,6 +822,8 @@ catch (err) {}
 			stringMDN += '</tbody>\n';
 			stringMDN += '</table>\n';
 		}
+
+		this.debugTrace('createInterfaceMDN', 945, 'Before methods');
 
 		// Create Methods
 		if (arrayMethods && arrayMethods.length > 0)
@@ -989,6 +1009,8 @@ catch (err) {}
 
 		stringMDN += '<h2 name="' + this.lz_SeeAlso_Name + '">' + this.lz_SeeAlso + '</h2>\n';
 		stringMDN += '<ul>\n  <li>&nbsp;</li>\n</ul>\n';
+
+		this.debugTrace('createInterfaceMDN', 940, 'Finish');
 
 		return stringMDN;
 	},
