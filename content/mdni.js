@@ -38,7 +38,7 @@
 var mdni = {
 
 	// Production list
-/*
+
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla1.8', '1.8'],
@@ -49,14 +49,14 @@ var mdni = {
 //		['mozilla2.0', '2.0'],
 		['mozilla-central', '2.0'],
 	],
-*/
 
+/*
 	// Testing list
 	versionGecko: [
 		['mozilla1.7', '1.7'],
 		['mozilla-central', '2.0'],
 	],
-
+*/
 	nsIConsoleService: Components.classes['@mozilla.org/consoleservice;1'].getService(Components.interfaces.nsIConsoleService),
 
 	nsIDOMSerializer: Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer),
@@ -69,7 +69,7 @@ var mdni = {
 
 	debugTraceLevels: {},
 
-	objInterfaces: {},
+	objInterface: {},
 
 	arrayWarnings: [],
 	countWarnings: 0,
@@ -160,8 +160,12 @@ var mdni = {
 
 	generateFromMXR: function(sourceIdl)
 	{
-		// Reset the Interfaces object
-		this.objInterfaces = {};
+		// Reset the Interface object
+		this.objInterfaceSource = {};
+		this.objInterfaceSource.attributes = {};
+		this.objInterfaceSource.constants = {};
+		this.objInterfaceSource.methods = {};
+		this.objInterfaceSource.interfaceName = null;
 
 		// Reset the Warnings array
 		this.arrayWarnings = [];
@@ -222,33 +226,31 @@ var mdni = {
 			this.updateProgress('Finish ' + this.versionGecko[i][1]);
 		}
 
+		this.debugTrace('generateFromMXR', 980, 'removeInterfaceTabs');
+
 		// Remove existing tabs
 		this.removeInterfaceEditorTabs();
 
-		this.debugTrace('generateFromMXR', 980, 'removeInterfaceEditorTabs : complete');
+		this.debugTrace('generateFromMXR', 950, 'generateStringMDN');
 
-		// Create Interface MDN and add to tabs
-		for each (var objInterface in this.objInterfaces)
-		{
-			this.debugTrace('generateFromMXR', 985, 'Start adding an interface tab');
+		// Generate string
+		var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.versionGecko);
 
-			// Generate string
-			var stringMDN = this.createInterfaceMDN(objInterface, this.versionGecko);
+		this.debugTrace('generateFromMXR', 985, 'addInterfaceTab');
 
-			// Add Interface to tabs
-			this.addInterfaceEditorTab(objInterface.interfaceName, stringMDN);
-
-			this.debugTrace('generateFromMXR', 985, 'Finish adding an interface tab');
-		}
-
-		this.debugTrace('generateFromMXR', 985, 'Start adding warning tab');
+		// Add Interface to tabs
+		this.addInterfaceEditorTab(this.objInterfaceSource.interfaceName, stringMDN);
 
 		if (this.arrayWarnings.length > 0)
 		{
+			this.debugTrace('generateFromMXR', 985, 'addWarnings');
+
 			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
 		}
-
-		this.debugTrace('generateFromMXR', 985, 'Finish adding warning tab');
+		else
+		{
+			this.debugTrace('generateFromMXR', 985, 'noWarnings');
+		}
 
 		this.updateProgress('Complete ' + sourceIdl);
 	},
@@ -294,6 +296,9 @@ var mdni = {
 				// Get interface name
 				interfaceName = stringIdlLine.match(/^INTERFACE\s+(\S*)/i)[1];
 
+				// Strip hugging : if necessary
+				interfaceName = interfaceName.replace (/:$/, '');
+
 				this.debugTrace('updateInterfaces', 960, 'foundInterface ' + interfaceName);
 
 				// Check if we want to keep this interface (is the one we are after)
@@ -301,34 +306,33 @@ var mdni = {
 				{
 					isWanted = true;
 
-					// Strip hugging : if necessary
-					interfaceName = interfaceName.replace (/:$/, '');
+					this.debugTrace('updateInterfaces', 965, 'wanted');
+
 					// Get interface inherits from
 					if (stringIdlLine.match(/:/) !== null)
 					{
 						interfaceInherits = stringIdlLine.match(/:\s*([^(\s|{)]*)/)[1];
 					}
-					// If object for this interface does not exist then create it
-					if (!this.objInterfaces[interfaceName])
+					// If object for the interface does not exist then create it
+					if (!this.objInterfaceSource.interfaceName)
 					{
-						this.objInterfaces[interfaceName] = {};
-						this.objInterfaces[interfaceName].attributes = {};
-						this.objInterfaces[interfaceName].constants = {};
-						this.objInterfaces[interfaceName].methods = {};
-						this.objInterfaces[interfaceName].interfaceName = interfaceName;
-						this.objInterfaces[interfaceName].versionFirst = sourceVersionGeckoIndex;
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
-						this.objInterfaces[interfaceName].constantsChanged = false;
+						this.objInterfaceSource.interfaceName = interfaceName;
+						this.objInterfaceSource.versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
+						this.objInterfaceSource.constantsChanged = false;
 					}
-					this.objInterfaces[interfaceName].path = pathIdl;
-					this.objInterfaces[interfaceName].scriptable = interfaceScriptable;
-					this.objInterfaces[interfaceName].inherits = interfaceInherits;
-					this.objInterfaces[interfaceName].versionLast = sourceVersionGeckoIndex;
-					this.objInterfaces[interfaceName].comment = stringComment;
+					this.objInterfaceSource.path = pathIdl;
+					this.objInterfaceSource.scriptable = interfaceScriptable;
+					this.objInterfaceSource.inherits = interfaceInherits;
+					this.objInterfaceSource.versionLast = sourceVersionGeckoIndex;
+					this.objInterfaceSource.comment = stringComment;
 				}
 				else
 				{
 					isWanted = false;
+
+					this.debugTrace('updateInterfaces', 965, 'unwanted');
+
 				}
 				stringComment = '';
 				inInterface = true;
@@ -339,7 +343,7 @@ var mdni = {
 				if (isWanted == true)
 				{
 					// Add constant array to interface
-					this.objInterfaces[interfaceName].constantOrder = arrayConstantOrder;
+					this.objInterfaceSource.constantOrder = arrayConstantOrder;
 					// Reset constant order array
 					arrayConstantOrder = [];
 					countConstantOrder = 0;
@@ -381,25 +385,25 @@ var mdni = {
 						// Remove the comment form the idl line
 						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/gm, ';');
 					}
-					if (!this.objInterfaces[interfaceName].attributes[attributeName])
+					if (!this.objInterfaceSource.attributes[attributeName])
 					{
-						this.objInterfaces[interfaceName].attributes[attributeName] = {};
-						this.objInterfaces[interfaceName].attributes[attributeName].nameText = attributeName;
-						this.objInterfaces[interfaceName].attributes[attributeName].versionFirst = sourceVersionGeckoIndex;
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
+						this.objInterfaceSource.attributes[attributeName] = {};
+						this.objInterfaceSource.attributes[attributeName].nameText = attributeName;
+						this.objInterfaceSource.attributes[attributeName].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
-						if (this.objInterfaces[interfaceName].attributes[attributeName].lineIdl != stringIdlLineClean)
+						if (this.objInterfaceSource.attributes[attributeName].lineIdl != stringIdlLineClean)
 						{
-							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
-							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].attributes[attributeName].lineIdl + '\n  ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaceSource.attributes[attributeName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaceSource.attributes[attributeName].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 					}
-					this.objInterfaces[interfaceName].attributes[attributeName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].attributes[attributeName].versionLast = sourceVersionGeckoIndex;
-					this.objInterfaces[interfaceName].attributes[attributeName].comment = stringComment;
+					this.objInterfaceSource.attributes[attributeName].lineIdl = stringIdlLineClean;
+					this.objInterfaceSource.attributes[attributeName].versionLast = sourceVersionGeckoIndex;
+					this.objInterfaceSource.attributes[attributeName].comment = stringComment;
 					stringComment = '';
 				}
 				else if (stringIdlLineClean.match(/^CONST\s/i) !== null) // Found a constant
@@ -423,34 +427,34 @@ var mdni = {
 					// Add to constant order
 					arrayConstantOrder[countConstantOrder++] = constantName;
 
-					if (!this.objInterfaces[interfaceName].constants[constantName])
+					if (!this.objInterfaceSource.constants[constantName])
 					{
-						this.objInterfaces[interfaceName].constants[constantName] = {};
-						this.objInterfaces[interfaceName].constants[constantName].nameText = constantName;
-						this.objInterfaces[interfaceName].constants[constantName].versionFirst = sourceVersionGeckoIndex;
-						this.objInterfaces[interfaceName].constants[constantName].values = [];
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
+						this.objInterfaceSource.constants[constantName] = {};
+						this.objInterfaceSource.constants[constantName].nameText = constantName;
+						this.objInterfaceSource.constants[constantName].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaceSource.constants[constantName].values = [];
+						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
-						if (this.objInterfaces[interfaceName].constants[constantName].lineIdl != stringIdlLineClean)
+						if (this.objInterfaceSource.constants[constantName].lineIdl != stringIdlLineClean)
 						{
-							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].constants[constantName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
-							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].constants[constantName].lineIdl + '\n  ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaceSource.constants[constantName].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaceSource.constants[constantName].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 						// If the value of the constant changed then let the iterface know so we can create a different constants table
 						// (Why, oh why do we have to do this. Should not a constant be, CONSTANT!!!)
-						if (this.objInterfaces[interfaceName].constants[constantName].valuePrevious != constantValue)
+						if (this.objInterfaceSource.constants[constantName].valuePrevious != constantValue)
 						{
-							this.objInterfaces[interfaceName].constantsChanged = true;
+							this.objInterfaceSource.constantsChanged = true;
 						}
 					}
-					this.objInterfaces[interfaceName].constants[constantName].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].constants[constantName].versionLast = sourceVersionGeckoIndex;
-					this.objInterfaces[interfaceName].constants[constantName].comment = stringComment;
-					this.objInterfaces[interfaceName].constants[constantName].values[sourceVersionGeckoIndex] = constantValue;
-					this.objInterfaces[interfaceName].constants[constantName].valuePrevious = constantValue;
+					this.objInterfaceSource.constants[constantName].lineIdl = stringIdlLineClean;
+					this.objInterfaceSource.constants[constantName].versionLast = sourceVersionGeckoIndex;
+					this.objInterfaceSource.constants[constantName].comment = stringComment;
+					this.objInterfaceSource.constants[constantName].values[sourceVersionGeckoIndex] = constantValue;
+					this.objInterfaceSource.constants[constantName].valuePrevious = constantValue;
 					stringComment = '';
 				}
 				else if (stringIdlLineClean != '') // Found a method (Should be nothing else left, blank line check just in case)
@@ -468,25 +472,25 @@ var mdni = {
 
 					this.debugTrace('updateInterfaces', 965, 'foundMethod ' + methodName);
 
-					if (!this.objInterfaces[interfaceName].methods[methodNameHash])
+					if (!this.objInterfaceSource.methods[methodNameHash])
 					{
-						this.objInterfaces[interfaceName].methods[methodNameHash] = {};
-						this.objInterfaces[interfaceName].methods[methodNameHash].nameText = methodName;
-						this.objInterfaces[interfaceName].methods[methodNameHash].versionFirst = sourceVersionGeckoIndex;
-						this.objInterfaces[interfaceName].versionLastAddition = sourceVersionGeckoIndex;
+						this.objInterfaceSource.methods[methodNameHash] = {};
+						this.objInterfaceSource.methods[methodNameHash].nameText = methodName;
+						this.objInterfaceSource.methods[methodNameHash].versionFirst = sourceVersionGeckoIndex;
+						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
 					}
 					else
 					{
 						// If the line 'signature' changed log a warning
-						if (this.objInterfaces[interfaceName].methods[methodNameHash].lineIdl != stringIdlLineClean)
+						if (this.objInterfaceSource.methods[methodNameHash].lineIdl != stringIdlLineClean)
 						{
-							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaces[interfaceName].methods[methodNameHash].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
-							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaces[interfaceName].methods[methodNameHash].lineIdl + '\n  ' + stringIdlLineClean;
+							var stringWarningVersion = interfaceName + ' ' + sourceVersionGecko[this.objInterfaceSource.methods[methodNameHash].versionLast][1] + ' -> ' + sourceVersionGecko[sourceVersionGeckoIndex][1] + ' : ';
+							this.arrayWarnings[this.countWarnings++] = stringWarningVersion + '\n  ' + this.objInterfaceSource.methods[methodNameHash].lineIdl + '\n  ' + stringIdlLineClean;
 						}
 					}
-					this.objInterfaces[interfaceName].methods[methodNameHash].lineIdl = stringIdlLineClean;
-					this.objInterfaces[interfaceName].methods[methodNameHash].versionLast = sourceVersionGeckoIndex;
-					this.objInterfaces[interfaceName].methods[methodNameHash].comment = stringComment;
+					this.objInterfaceSource.methods[methodNameHash].lineIdl = stringIdlLineClean;
+					this.objInterfaceSource.methods[methodNameHash].versionLast = sourceVersionGeckoIndex;
+					this.objInterfaceSource.methods[methodNameHash].comment = stringComment;
 					stringComment = '';
 				}
 			}
@@ -1026,7 +1030,7 @@ catch (err) {}
 		var dummyMXRPath = '||Unknown||';
 
 		// Reset the Interfaces object
-		this.objInterfaces = {};
+		this.objInterfaceSources = {};
 
 		// Reset the Warnings array
 		this.arrayWarnings =[];
@@ -1038,7 +1042,7 @@ catch (err) {}
 		this.removeInterfaceEditorTabs();
 
 		// Create Interface MDN and add to tabs
-		for each (var objInterface in this.objInterfaces)
+		for each (var objInterface in this.objInterfaceSources)
 		{
 			// Generate string
 			var stringMDN = this.createInterfaceMDN(objInterface, dummyVersionGecko);
