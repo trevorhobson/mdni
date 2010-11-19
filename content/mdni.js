@@ -76,10 +76,69 @@ var mdni = {
 
 	stringBundle: '',
 
+	// Localize variables
+	lz_MethodOverview: 'Method overview',
+	lz_MethodOverview_Name: 'Method_overview',
+	lz_Attributes: 'Attributes',
+	lz_Attributes_Name: 'Attributes',
+	lz_Attribute: 'Attribute',
+	lz_Type: 'Type',
+	lz_Description: 'Description',
+	lz_Constants: 'Constants',
+	lz_Constants_Name: 'Constants',
+	lz_Constant: 'Constant',
+	lz_Value: 'Value',
+	lz_GeckoVersion: 'Gecko version',
+	lz_Methods: 'Methods',
+	lz_Methods_Name: 'Methods',
+	lz_Parameters: 'Parameters',
+	lz_Parameters_Name: 'Parameters',
+	lz_Remarks: 'Remarks',
+	lz_Remarks_Name: 'Remarks',
+	lz_SeeAlso: 'See also',
+	lz_SeeAlso_Name: 'See_also',
+	lz_None: 'None.',
+	lz_ReturnValue: 'Return value',
+	lz_ReturnValue_Name: 'Return value',
+	lz_ReadOnly: 'Read only.',
+	lz_ExceptionsThrown: 'Exceptions thrown',
+	lz_ExceptionsThrown_Name: 'Exceptions_thrown',
+	lz_MissingDescription: 'Missing Description',
+	lz_MissingException: 'Missing Exception',
+
 	init: function()
 	{
 		this.nsIScriptableUnicodeConverter.charset = "UTF-8";
+
 		this.stringBundle = document.getElementById('mdniStrings');
+		this.lz_MethodOverview = this.stringBundle.getString('MethodOverview');
+		this.lz_MethodOverview_Name = this.stringBundle.getString('MethodOverview_Name');
+		this.lz_Attributes = this.stringBundle.getString('Attributes');
+		this.lz_Attributes_Name = this.stringBundle.getString('Attributes_Name');
+		this.lz_Attribute = this.stringBundle.getString('Attribute');
+		this.lz_Type = this.stringBundle.getString('Type');
+		this.lz_Description = this.stringBundle.getString('Description');
+		this.lz_Constants = this.stringBundle.getString('Constants');
+		this.lz_Constants_Name = this.stringBundle.getString('Constants_Name');
+		this.lz_Constant = this.stringBundle.getString('Constant');
+		this.lz_Value = this.stringBundle.getString('Value');
+		this.lz_GeckoVersion = this.stringBundle.getString('GeckoVersion');
+		this.lz_Methods = this.stringBundle.getString('Methods');
+		this.lz_Methods_Name = this.stringBundle.getString('Methods_Name');
+		this.lz_Parameters = this.stringBundle.getString('Parameters');
+		this.lz_Parameters_Name = this.stringBundle.getString('Parameters_Name');
+		this.lz_Remarks = this.stringBundle.getString('Remarks');
+		this.lz_Remarks_Name = this.stringBundle.getString('Remarks_Name');
+		this.lz_SeeAlso = this.stringBundle.getString('SeeAlso');
+		this.lz_SeeAlso_Name = this.stringBundle.getString('SeeAlso_Name');
+		this.lz_None = this.stringBundle.getString('None');
+		this.lz_ReturnValue = this.stringBundle.getString('ReturnValue');
+		this.lz_ReturnValue_Name = this.stringBundle.getString('ReturnValue_Name');
+		this.lz_ReadOnly = this.stringBundle.getString('ReadOnly');
+		this.lz_ExceptionsThrown = this.stringBundle.getString('ExceptionsThrown');
+		this.lz_ExceptionsThrown_Name = this.stringBundle.getString('ExceptionsThrown_Name');
+		this.lz_MissingDescription = this.stringBundle.getString('MissingDescription');
+		this.lz_MissingException = this.stringBundle.getString('MissingException');
 	},
 
 
@@ -276,7 +335,7 @@ var mdni = {
 					// If there is a left over comment log a warning
 					if (stringComment != '')
 					{
-						this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[sourceVersionGeckoIndex][1] + ' Comment at end of Interface(' + interfaceName + '): ' + stringComment;
+						this.arrayWarnings[this.countWarnings++] = sourceVersionGecko[sourceVersionGeckoIndex][1] + ' Comment at end of Interface(' + interfaceName + '):\n' + stringComment;
 					}
 					stringComment = '';
 					inInterface = false;
@@ -560,7 +619,7 @@ catch (err) {}
 		// Create Method overview table
 		if (arrayMethods && arrayMethods.length > 0)
 		{
-			stringMDN += '<h2 name="Method_overview">Method overview</h2>\n';
+			stringMDN += '<h2 name="' + this.lz_MethodOverview_Name + '">' + this.lz_MethodOverview + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			for (var i=0; i<arrayMethods.length; i++)
@@ -584,13 +643,13 @@ catch (err) {}
 		// Create Attributes table
 		if (arrayAttributes && arrayAttributes.length > 0)
 		{
-			stringMDN += '<h2 name="Attributes">Attributes</h2>\n';
+			stringMDN += '<h2 name="' + this.lz_Attributes_Name + '">' + this.lz_Attributes + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			stringMDN += '<tr>\n';
-			stringMDN += '<td class="header">Attribute</td>\n';
-			stringMDN += '<td class="header">Type</td>\n';
-			stringMDN += '<td class="header">Description</td>\n';
+			stringMDN += '<td class="header">' + this.lz_Attribute + '</td>\n';
+			stringMDN += '<td class="header">' + this.lz_Type + '</td>\n';
+			stringMDN += '<td class="header">' + this.lz_Description + '</td>\n';
 			stringMDN += '</tr>\n';
 
 			for (var i=0; i<arrayAttributes.length; i++)
@@ -619,7 +678,7 @@ catch (err) {}
 				var stringAttributePrefix = '';
 				if (stringAttributePrefixRaw !== null)
 				{
-					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, '<strong>Read only.</strong>');
+					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, '<strong>' + this.lz_ReadOnly + '</strong>');
 				}
 
 				stringMDN += '<tr>\n';
@@ -636,7 +695,7 @@ catch (err) {}
 				// Show exceptions
 				if (objInterface.attributes[arrayAttributes[i]].exceptions)
 				{
-					stringMDN += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
+					stringMDN += '<h6 name="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
 					stringMDN += '<dl>\n';
 					for each (var objException in objInterface.attributes[arrayAttributes[i]].exceptions)
 					{
@@ -656,23 +715,23 @@ catch (err) {}
 		// Create Constants table
 		if (arrayConstants && arrayConstants.length > 0)
 		{
-			stringMDN += '<h2 name="Constants">Constants</h2>\n';
+			stringMDN += '<h2 name="' + this.lz_Constants_Name + '">' + this.lz_Constants + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			if (objInterface.constantsChanged == false)
 			{
 				stringMDN += '<tr>\n';
-				stringMDN += '<td class="header">Constant</td>\n';
-				stringMDN += '<td class="header">Value</td>\n';
-				stringMDN += '<td class="header">Description</td>\n';
+				stringMDN += '<td class="header">' + this.lz_Constant + '</td>\n';
+				stringMDN += '<td class="header">' + this.lz_Value + '</td>\n';
+				stringMDN += '<td class="header">' + this.lz_Description + '</td>\n';
 				stringMDN += '</tr>\n';
 			}
 			else
 			{
 				stringMDN += '<tr>\n';
-				stringMDN += '<td class="header" rowspan="2">Constant</td>\n';
-				stringMDN += '<td class="header" colspan="' + (objInterface.versionLast - objInterface.versionFirst + 1) + '">Gecko version</td>\n';
-				stringMDN += '<td class="header" rowspan="2">Description</td>\n';
+				stringMDN += '<td class="header" rowspan="2">' + this.lz_Constant + '</td>\n';
+				stringMDN += '<td class="header" colspan="' + (objInterface.versionLast - objInterface.versionFirst + 1) + '">' + this.lz_GeckoVersion + '</td>\n';
+				stringMDN += '<td class="header" rowspan="2">' + this.lz_Description + '</td>\n';
 				stringMDN += '</tr>\n';
 				stringMDN += '<tr>\n';
 				for (var j=objInterface.versionFirst; j<=objInterface.versionLast; j++)
@@ -749,7 +808,7 @@ catch (err) {}
 		// Create Methods
 		if (arrayMethods && arrayMethods.length > 0)
 		{
-			stringMDN += '<h2 name="Methods">Methods</h2>\n';
+			stringMDN += '<h2 name="' + this.lz_Methods_Name + '">' + this.lz_Methods + '</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
 				var arrayMethodsIHash = this.stringHash(arrayMethods[i]);
@@ -858,7 +917,7 @@ catch (err) {}
 				stringMDN += '</pre>\n';
 
 				// Show parameters
-				stringMDN += '<h6 name="Parameters">Parameters</h6>\n';
+				stringMDN += '<h6 name="' + this.lz_Parameters_Name + '">' + this.lz_Parameters + '</h6>\n';
 				if (arrayMethodParameters.length > 0)
 				{
 					stringMDN += '<dl>\n';
@@ -877,7 +936,7 @@ catch (err) {}
 						}
 						else
 						{
-							stringMDN += 'Missing Description';
+							stringMDN += this.lz_MissingDescription;
 						}
 						stringMDN += '</dd>\n';
 					}
@@ -885,13 +944,13 @@ catch (err) {}
 				}
 				else
 				{
-					stringMDN += '<p>None.</p>\n';
+					stringMDN += '<p>' + this.lz_None + '</p>\n';
 				}
 
 				// Show returns
 				if (objInterface.methods[arrayMethodsIHash].lineIdl.match(/^void\s+/i) === null)
 				{
-					stringMDN += '<h6 name="Return_value">Return value</h6>\n';
+					stringMDN += '<h6 name="' + this.lz_ReturnValue_Name + '">' + this.lz_ReturnValue + '</h6>\n';
 					// If there is a return (not void)
 					stringMDN += '<p>';
 					if (objInterface.methods[arrayMethodsIHash].returns)
@@ -900,13 +959,13 @@ catch (err) {}
 					}
 					else
 					{
-						stringMDN += 'Missing Description'
+						stringMDN += this.lz_MissingDescription;
 					}
 					stringMDN += '</p>\n';
 				}
 
 				// Show exceptions
-				stringMDN += '<h6 name="Exceptions_thrown">Exceptions thrown</h6>\n';
+				stringMDN += '<h6 name="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
 				stringMDN += '<dl>';
 				if (objInterface.methods[arrayMethodsIHash].exceptions)
 				{
@@ -918,17 +977,17 @@ catch (err) {}
 				}
 				else
 				{
-					stringMDN += '<dt><code>Missing Exception</code></dt>\n';
-					stringMDN += '<dd>Missing Description</dd>\n';
+					stringMDN += '<dt><code>' + this.lz_MissingException + '</code></dt>\n';
+					stringMDN += '<dd>' + this.lz_MissingDescription + '</dd>\n';
 				}
 				stringMDN += '</dl>\n';
 			}
 		}
 
-		stringMDN += '<h2 name="Remarks">Remarks</h2>\n';
+		stringMDN += '<h2 name="' + this.lz_Remarks_Name + '">' + this.lz_Remarks + '</h2>\n';
 		stringMDN += '<p>&nbsp;</p>\n';
 
-		stringMDN += '<h2 name="See_also">See also</h2>\n';
+		stringMDN += '<h2 name="' + this.lz_SeeAlso_Name + '">' + this.lz_SeeAlso + '</h2>\n';
 		stringMDN += '<ul>\n  <li>&nbsp;</li>\n</ul>\n';
 
 		return stringMDN;
@@ -1258,6 +1317,7 @@ catch (err) {}
 
 				// Add note template to notes
 				if (arrayParagraph[i].match(/^@note\s/i) !== null)
+
 
 				{
 					// Fix templates that are going to be inside notes
