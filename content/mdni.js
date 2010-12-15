@@ -258,6 +258,7 @@ var mdni = {
 	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex, sourceIdl)
 	{
 		this.debugTrace('updateInterfaces', 990, 'cleanIdl :\n' + cleanIdl);
+
 		var arrayConstantOrder = [];
 		var countConstantOrder = 0;
 		// Split IDL into lines for processing
@@ -289,7 +290,7 @@ var mdni = {
 			}
 			else if (stringIdlLine.match(/^\[.*uuid\(.*\)\]/i) !== null) // Scriptable line
 			{
-				interfaceScriptable = (stringIdlLine.match(/^\[scriptable,/i) !== null)
+				interfaceScriptable = (stringIdlLine.match(/^(?:\[|.*,\s)scriptable,/i) !== null)
 			}
 			else if (stringIdlLine.match(/^INTERFACE.*{/i) !== null) // Start of interface
 			{
@@ -337,7 +338,7 @@ var mdni = {
 				stringComment = '';
 				inInterface = true;
 			}
-			else if (stringIdlLine.match(/^};/) !== null) // End of interface
+			else if (stringIdlLine.match(/^};{0,1}/) !== null) // End of interface (Sometimes the ; will be missing, hopefully this will not break anything)
 			{
 				this.debugTrace('updateInterfaces', 960, 'endInterface ' + interfaceName);
 				if (isWanted == true)
@@ -459,6 +460,9 @@ var mdni = {
 				}
 				else if (stringIdlLineClean != '') // Found a method (Should be nothing else left, blank line check just in case)
 				{
+					// Strip any * from methods, sometimes in the the other-licenses interfaces
+					stringIdlLineClean = stringIdlLineClean.replace(/\*/g,' ');
+
 					// Sometimes kindly souls decide to break methods in annoying places so may have to shove this line at the beginning of the next
 					if (!stringIdlLineClean.match(/\);{0,1}$/) && i<stringIdlLines.length)
 					{
@@ -467,7 +471,8 @@ var mdni = {
 						continue;
 					}
 
-					var methodName = stringIdlLineClean.match(/\S+(?=\()/)[0];
+					// Get the method name (replace is used for quick and dirty line cleanup)
+					var methodName = stringIdlLineClean.replace(/\(.*/,'(').match(/\S+(?=\()/)[0];
 					var methodNameHash = this.stringHash(methodName);
 
 					this.debugTrace('updateInterfaces', 965, 'foundMethod ' + methodName);
@@ -593,9 +598,14 @@ var mdni = {
 		// If the interface has a comment then make it pretty and add it to the MDN string (May be too long/complex to put in IFSummary)
 		if (objInterface.comment !== '')
 		{
-			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false, null, regInterface, regAddCode, regAddMethod);
+			var stringInterfaceCommentPretty = this.tidyComment(objInterface.comment, false, objInterface, regInterface, regAddCode, regAddMethod);
 
-			if (stringInterfaceCommentPretty !== '')
+			// If there is a brief then use it, otherwise use comment
+			if (objInterface.brief)
+			{
+				stringMDN += objInterface.brief + '\n';
+			}
+			else if (stringInterfaceCommentPretty !== '')
 			{
 				stringMDN += stringInterfaceCommentPretty;
 			}
@@ -627,6 +637,7 @@ catch (err) {}
 }
 */
 		stringMDN += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\>. To create an instance, use:</p>\n';
+		stringMDN += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\> as a service:</p>\n';
 		stringMDN += '<pre class="eval">\n';
 		stringMDN += 'var ' + interfaceNameShort + ' = Components.classes["@mozilla.org/????????????????????????????"]\n';
 		stringMDN += (new Array(8 + interfaceNameShort.length)).join(' ') + '.createInstance(Components.interfaces.' + objInterface.interfaceName + ');\n';
@@ -646,7 +657,7 @@ catch (err) {}
 				var stringMethodLink = '<a href="#' + arrayMethods[i] + '()">' + arrayMethods[i] + '</a>';
 				stringMDN += '<tr>\n';
 				stringMDN += '<td>';
-				stringMDN += '<code>' + objInterface.methods[arrayMethodsIHash].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '') + '</code>';
+				stringMDN += '<code>' + objInterface.methods[arrayMethodsIHash].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '').replace(/\[out,\s{0,1}retval\]/gi,'[out]') + '</code>';
 				stringMDN += objInterface.methods[arrayMethodsIHash].notxpcomText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].noscriptText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].minversionText;
@@ -836,6 +847,10 @@ catch (err) {}
 			for (var i=0; i<arrayMethods.length; i++)
 			{
 				var arrayMethodsIHash = this.stringHash(arrayMethods[i]);
+
+				// Regular expression for striping manch of this method
+				regStripManch = new RegExp('\\{\\{manch\\(\\"(' + objInterface.methods[arrayMethodsIHash].nameText + ')\\"\\)\\}\\}', 'gi');
+
 				// Blank regular expression
 				var regAddCodeExtra = null;
 
@@ -869,8 +884,16 @@ catch (err) {}
 							arrayMethodParameters[countPatameters] += currentChar;
 						}
 					}
-					// Create a regular expression for adding code tags to parameters in comments
-					regAddCodeExtra = new RegExp('\\b(' + arrayMethodParameters.join('|') + ')\\b', 'gi');
+					// Create a regular expression for adding code tags to parameters in comments (sometimes this fails, so ignore if it does)
+					try
+					{					
+						regAddCodeExtra = new RegExp('\\b(' + arrayMethodParameters.join('|') + ')\\b', 'gi');
+					}
+					catch (err)
+					{
+						this.debugTrace('createInterfaceMDN', 950, 'Unable to <code> parameters : ' + err);
+						regAddCodeExtra = null;
+					}
 				}
 
 				// If the method has a comment
@@ -917,7 +940,15 @@ catch (err) {}
 					stringMDN += '<h3 name="' + objInterface.methods[arrayMethodsIHash].nameText + '()">' + objInterface.methods[arrayMethodsIHash].nameText + '()</h3>\n'
 				}
 
-				stringMDN += stringMethodCommentPretty;
+				// If there is a brief then use it, otherwise use comment
+				if (objInterface.methods[arrayMethodsIHash].brief)
+				{
+					stringMDN += objInterface.methods[arrayMethodsIHash].brief.replace(regStripManch, '<code>$1</code>') + '\n';
+				}
+				else
+				{
+					stringMDN += stringMethodCommentPretty.replace(regStripManch, '<code>$1</code>');
+				}
 
 				// Show syntax
 				stringMDN += '<pre class="eval">\n';
@@ -930,7 +961,7 @@ catch (err) {}
 						{
 							stringMDN += ',';
 						}
-						stringMDN += '\n  ' + arrayMethodParameters[iParameters].replace(/^\s+/, '');
+						stringMDN += '\n  ' + arrayMethodParameters[iParameters].replace(/^\s+/, '').replace(/\[out,\sretval\]/gi,'[out]');
 					}
 					stringMDN += '\n);\n';
 				}
@@ -947,16 +978,15 @@ catch (err) {}
 					stringMDN += '<dl>\n';
 					for (var iParameters=0; iParameters<arrayMethodParameters.length; iParameters++)
 					{
-						var stringParameterName = arrayMethodParameters[iParameters].match(/\S*$/)[0];
+						var stringParameterName = arrayMethodParameters[iParameters].replace(/\s*$/,'').match(/\S*$/)[0];
 						var stringParameterNameLower = stringParameterName.toLowerCase();
-
 						stringMDN += '<dt><code>' + stringParameterName + '</code></dt>\n';
 						stringMDN += '<dd>';
 
 						// If there a description for this parameter then use it
 						if(objInterface.methods[arrayMethodsIHash].parameters && objInterface.methods[arrayMethodsIHash].parameters[stringParameterNameLower])
 						{
-							stringMDN += objInterface.methods[arrayMethodsIHash].parameters[stringParameterNameLower].description;
+							stringMDN += objInterface.methods[arrayMethodsIHash].parameters[stringParameterNameLower].description.replace(regStripManch, '<code>$1</code>');
 						}
 						else
 						{
@@ -971,15 +1001,22 @@ catch (err) {}
 					stringMDN += '<p>' + this.lz_None + '</p>\n';
 				}
 
-				// Show returns
+				// Show returns, if there is a return (not void)
 				if (objInterface.methods[arrayMethodsIHash].lineIdl.match(/^void\s+/i) === null)
 				{
 					stringMDN += '<h6 name="' + this.lz_ReturnValue_Name + '">' + this.lz_ReturnValue + '</h6>\n';
-					// If there is a return (not void)
 					stringMDN += '<p>';
-					if (objInterface.methods[arrayMethodsIHash].returns)
+					// If there are retval and/or returns
+					if (objInterface.methods[arrayMethodsIHash].retval || objInterface.methods[arrayMethodsIHash].returns)
 					{
-						stringMDN += objInterface.methods[arrayMethodsIHash].returns.description;
+						if (objInterface.methods[arrayMethodsIHash].retval)
+						{
+							stringMDN += objInterface.methods[arrayMethodsIHash].retval.join(' ').replace(regStripManch, '<code>$1</code>');
+						}
+						if (objInterface.methods[arrayMethodsIHash].returns)
+						{
+							stringMDN += objInterface.methods[arrayMethodsIHash].returns.description.replace(regStripManch, '<code>$1</code>');
+						}
 					}
 					else
 					{
@@ -1155,7 +1192,6 @@ catch (err) {}
 				inInterface = false;
 			}
 
-
 			if (stringStripLines[i].match(/\s*\*\//) !== null)
 			{
 				inCommentRegular = false;
@@ -1185,6 +1221,9 @@ catch (err) {}
 		// Switch 'o' style lists to '-' style
 		var stringSwitchA = stringJoinA.replace(/(^\*\s*)o(?=\s)/gm, '$1-');
 
+		// Switch '@li' style lists to '-' style (This will assume all li are unordered)
+		var stringSwitchA = stringJoinA.replace(/(^\*\s*)@li(?=\s)/gm, '$1-');
+
 		// Purge multiple blank comment lines
 		var stringPurgeA = stringSwitchA.replace(/(\*\n)+(?=\*\n)/g, '')
 
@@ -1198,7 +1237,7 @@ catch (err) {}
 
 	},
 
-	// Pretty format comment, optional also add @param/@throws to object
+	// Pretty format comment, optional also add @param/@throws/@returns/@retval/@brief to object
 	tidyComment: function(sourceComment, forTable, objGeneric, regInterface, regAddCode, regAddMethod, regAddCodeExtra)
 	{
 		var stringReturn = '';
@@ -1360,20 +1399,40 @@ catch (err) {}
 					// If an object has been passed then add to it
 					if (objGeneric)
 					{
+						var atName = null;
+						var atType = null;
 						// Get @ type and remove from paragraph
-						var atType = arrayParagraph[i].match(/@\S+(?=\s)/)[0].toLowerCase();
-						arrayParagraph[i] = arrayParagraph[i].replace(/@\S+\s+/, '');
+						try
+						{
+							atType = arrayParagraph[i].match(/@\S+(?=\s)/)[0].toLowerCase();
+							arrayParagraph[i] = arrayParagraph[i].replace(/@\S+\s+/, '');
+						}
+						catch (err)
+						{
+							atType = null;
+						}
 						if (atType === '@param' || atType === '@throws')
 						{
-							// Get @ name and remove from paragraph
-							var atName = arrayParagraph[i].match(/\S+(?=\s)/)[0];
-							var atNameLower = atName.toLowerCase();
-							arrayParagraph[i] = arrayParagraph[i].replace(/\S+\s+/, '');
+							// Strip leading in/out from description (sometimes out is before name)
+							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in\b|out\b|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
+							// Sometimes interestingly formed docs can cause problems
+							try
+							{
+								// Get @ name and remove from paragraph
+								atName = arrayParagraph[i].match(/\S+(?=\s)/)[0];
+								// Strip manch if required
+								atName = atName.replace(/\{\{manch\(\"|\"\)\}\}/g,'');
+								var atNameLower = atName.toLowerCase();
+								arrayParagraph[i] = arrayParagraph[i].replace(/\S+\s+/, '');
+							}
+							catch (err)
+							{
+								atName = null;
+							}
 						}
 						// Strip any leading -
 						arrayParagraph[i] = arrayParagraph[i].replace(/^-\s*(?=\S)/, '');
-
-						if (atType === '@param') // Parameter
+						if (atType === '@param' && atName) // Parameter
 						{
 							// If object does not have parameters
 							if (!objGeneric.parameters)
@@ -1386,13 +1445,13 @@ catch (err) {}
 								objGeneric.parameters[atNameLower] = {};
 							}
 
-							// Strip leading in/out from description
+							// Strip leading in/out from description (sometimes out is after name)
 							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in\b|out\b|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
 
 							objGeneric.parameters[atNameLower].nameText = atName;
 							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if (atType === '@throws') // Exception
+						else if (atType === '@throws' && atName) // Exception
 						{
 							// If object does not have exceptions
 							if (!objGeneric.exceptions)
@@ -1415,6 +1474,19 @@ catch (err) {}
 								objGeneric.returns = {};
 							}
 							objGeneric.returns.description = this.firstCaps(arrayParagraph[i]);
+						}
+						else if (atType === '@retval') // Retval
+						{
+							// If object does not have retval
+							if (!objGeneric.retval)
+							{
+								objGeneric.retval = [];
+							}
+							objGeneric.retval[objGeneric.retval.length] = this.firstCaps(arrayParagraph[i]);
+						}
+						else if (atType === '@brief') // Brief (Hopefully should only be one)
+						{
+							objGeneric.brief = this.firstCaps(arrayParagraph[i]);
 						}
 					}
 					arrayParagraph.splice(i, 1)
@@ -1621,20 +1693,7 @@ catch (err) {}
 		var hash = this.nsICryptoHash.finish(true);
 
 		return hash;
-/*
-		// return the two-digit hexadecimal code for a byte
-		function toHexString(charCode)
-		{
-			return ("0" + charCode.toString(16)).slice(-2);
-		}
 
-		// convert the binary hash data to a hex string.
-		var s = [toHexString(hash.charCodeAt(i)) for (i in hash)].join("");
-		// s now contains your hash in hex: should be
-		// 5eb63bbbe01eeed093cb22bb8f5acdc3
-
-this.jsdump(s);
-*/
 	},
 
 /***********************************************************
