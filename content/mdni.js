@@ -252,6 +252,9 @@ var mdni = {
 			this.debugTrace('generateFromMXR', 985, 'noWarnings');
 		}
 
+		// Add source to tabs
+		this.addInterfaceEditorTab('Source', versionGeckoMXRIdlText);
+
 		this.updateProgress('Complete ' + sourceIdl);
 	},
 
@@ -616,26 +619,7 @@ var mdni = {
 		interfaceNameShort = interfaceNameShort.replace(/^./, interfaceNameShortFirst);
 
 // TODO: Find the ?????????? detail
-/*
-		for (var cClass in Components.classes)
-		{
-// This causes browser to crash
-if (cClass.match(/@mozilla/) !== null && cClass !== '@mozilla.org/generic-factory;1' && cClass !== '@mozilla.org/xmlextras/proxy/webservicepropertybagwrapper;1' && cClass !== '@mozilla.org/extensions/manager;1'  && cClass !== '@mozilla.org/nss_errors_service;1' && cClass.match(/@mozilla.org\/intl\/unicode\/decoder/) == null)
-{
-try
-{
-dump('Creating: "' + cClass + '"\n');
-			var obj = Components.classes[cClass].createInstance();
 
-			if (obj.QueryInterface(Components.interfaces[objInterface.interfaceName]))
-			{
-				this.jsdump(cClass)
-			}
-}
-catch (err) {}
-		}
-}
-*/
 		stringMDN += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\>. To create an instance, use:</p>\n';
 		stringMDN += '<p>Implemented by: \<code\>?????????????????????????????????????\</code\> as a service:</p>\n';
 		stringMDN += '<pre class="eval">\n';
@@ -957,11 +941,16 @@ catch (err) {}
 				{
 					for (var iParameters=0; iParameters<arrayMethodParameters.length; iParameters++)
 					{
-						if (iParameters > 0)
+						stringMDN += '\n  ' + arrayMethodParameters[iParameters].replace(/\[optional\]/i, '').replace(/^\s+/, '').replace(/\[out,\sretval\]/i,'[out]');
+						if (iParameters < arrayMethodParameters.length - 1)
 						{
 							stringMDN += ',';
 						}
-						stringMDN += '\n  ' + arrayMethodParameters[iParameters].replace(/^\s+/, '').replace(/\[out,\sretval\]/gi,'[out]');
+						// If the parameter is optional then deal with that
+						if (arrayMethodParameters[iParameters].match(/\[optional\]/i))
+						{
+							stringMDN += ' {{optional_inline()}}'
+						}
 					}
 					stringMDN += '\n);\n';
 				}
@@ -980,7 +969,14 @@ catch (err) {}
 					{
 						var stringParameterName = arrayMethodParameters[iParameters].replace(/\s*$/,'').match(/\S*$/)[0];
 						var stringParameterNameLower = stringParameterName.toLowerCase();
-						stringMDN += '<dt><code>' + stringParameterName + '</code></dt>\n';
+						stringMDN += '<dt><code>' + stringParameterName + '</code>';
+
+						// If the parameter is optional then deal with that
+						if (arrayMethodParameters[iParameters].match(/\[optional\]/i))
+						{
+							stringMDN += ' {{optional_inline()}}'
+						}
+						stringMDN += '</dt>\n';
 						stringMDN += '<dd>';
 
 						// If there a description for this parameter then use it
@@ -1411,7 +1407,7 @@ catch (err) {}
 						{
 							atType = null;
 						}
-						if (atType === '@param' || atType === '@throws')
+						if (atType === '@param' || atType === '@throw' || atType === '@throws')
 						{
 							// Strip leading in/out from description (sometimes out is before name)
 							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in\b|out\b|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
@@ -1451,7 +1447,7 @@ catch (err) {}
 							objGeneric.parameters[atNameLower].nameText = atName;
 							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if (atType === '@throws' && atName) // Exception
+						else if ((atType === '@throw' || atType === '@throws') && atName) // Exception
 						{
 							// If object does not have exceptions
 							if (!objGeneric.exceptions)
@@ -1466,7 +1462,7 @@ catch (err) {}
 							objGeneric.exceptions[atNameLower].nameText = atName;
 							objGeneric.exceptions[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if (atType === '@return') // Returns
+						else if (atType === '@return' || atType === '@returns') // Returns
 						{
 							// If object does not have returns
 							if (!objGeneric.returns)
