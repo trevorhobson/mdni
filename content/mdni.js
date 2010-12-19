@@ -226,7 +226,7 @@ var mdni = {
 			this.updateProgress('Finish ' + this.versionGecko[i][1]);
 		}
 
-		this.debugTrace('generateFromMXR', 980, 'removeInterfaceTabs');
+		this.debugTrace('generateFromMXR', 975, 'removeInterfaceTabs');
 
 		// Remove existing tabs
 		this.removeInterfaceEditorTabs();
@@ -236,20 +236,20 @@ var mdni = {
 		// Generate string
 		var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.versionGecko);
 
-		this.debugTrace('generateFromMXR', 985, 'addInterfaceTab');
+		this.debugTrace('generateFromMXR', 980, 'addInterfaceTab');
 
 		// Add Interface to tabs
 		this.addInterfaceEditorTab(this.objInterfaceSource.interfaceName, stringMDN);
 
 		if (this.arrayWarnings.length > 0)
 		{
-			this.debugTrace('generateFromMXR', 985, 'addWarnings');
+			this.debugTrace('generateFromMXR', 980, 'addWarnings');
 
 			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
 		}
 		else
 		{
-			this.debugTrace('generateFromMXR', 985, 'noWarnings');
+			this.debugTrace('generateFromMXR', 980, 'noWarnings');
 		}
 
 		// Add source to tabs
@@ -260,7 +260,7 @@ var mdni = {
 
 	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex, sourceIdl)
 	{
-		this.debugTrace('updateInterfaces', 990, 'cleanIdl :\n' + cleanIdl);
+		this.debugTrace('updateInterfaces', 985, 'cleanIdl :\n' + cleanIdl);
 
 		var arrayConstantOrder = [];
 		var countConstantOrder = 0;
@@ -341,7 +341,7 @@ var mdni = {
 				stringComment = '';
 				inInterface = true;
 			}
-			else if (stringIdlLine.match(/^};{0,1}/) !== null) // End of interface (Sometimes the ; will be missing, hopefully this will not break anything)
+			else if (stringIdlLine.match(/^};?/) !== null) // End of interface (Sometimes the ; will be missing, hopefully this will not break anything)
 			{
 				this.debugTrace('updateInterfaces', 960, 'endInterface ' + interfaceName);
 				if (isWanted == true)
@@ -412,11 +412,6 @@ var mdni = {
 				}
 				else if (stringIdlLineClean.match(/^CONST\s/i) !== null) // Found a constant
 				{
-					var constantName = stringIdlLineClean.match(/\S+(?=\s*\=)/)[0];
-					var constantValue = stringIdlLineClean.match(/[^\=]+(?=\s*;)/)[0].replace(/^\s+/, '');
-
-					this.debugTrace('updateInterfaces', 965, 'foundConstant ' + constantName);
-
 					// If there is a comment on the end of the line add it to the comment
 					if (stringIdlLineClean.match(/;\s*\/+/) !== null)
 					{
@@ -428,6 +423,20 @@ var mdni = {
 						// Remove the comment from the idl line
 						stringIdlLineClean = stringIdlLineClean.replace(/;.*$/, ';');
 					}
+
+					// Sometimes kindly souls decide to break constants in annoying places so may have to shove this line at the beginning of the next
+					if (!stringIdlLineClean.match(/;$/) && i<stringIdlLines.length)
+					{
+						this.debugTrace('updateInterfaces', 970, 'foundConstant-BadSplit :\n' + stringIdlLineClean);
+						stringIdlLines[i+1] = stringIdlLineClean + ' ' + stringIdlLines[i+1];
+						continue;
+					}
+
+					var constantName = stringIdlLineClean.match(/\S+(?=\s*\=)/)[0];
+					var constantValue = stringIdlLineClean.match(/[^\=]+(?=\s*;)/)[0].replace(/^\s+/, '');
+
+					this.debugTrace('updateInterfaces', 965, 'foundConstant ' + constantName);
+
 					// Add to constant order
 					arrayConstantOrder[countConstantOrder++] = constantName;
 
@@ -464,10 +473,13 @@ var mdni = {
 				else if (stringIdlLineClean != '') // Found a method (Should be nothing else left, blank line check just in case)
 				{
 					// Strip any * from methods, sometimes in the the other-licenses interfaces
-					stringIdlLineClean = stringIdlLineClean.replace(/\*/g,' ');
+					stringIdlLineClean = stringIdlLineClean.replace(/\s*\*+\s*/g,' ');
+
+					// If there is a normal comment on the line, drop it (it is too complex to figure out what to do with it)
+					stringIdlLineClean = stringIdlLineClean.replace(/\s*\/{2,}.*$/, '');
 
 					// Sometimes kindly souls decide to break methods in annoying places so may have to shove this line at the beginning of the next
-					if (!stringIdlLineClean.match(/\);{0,1}$/) && i<stringIdlLines.length)
+					if (!stringIdlLineClean.match(/\);?$/) && i<stringIdlLines.length)
 					{
 						this.debugTrace('updateInterfaces', 970, 'foundMethod-BadSplit :\n' + stringIdlLineClean);
 						stringIdlLines[i+1] = stringIdlLineClean + ' ' + stringIdlLines[i+1];
@@ -641,7 +653,7 @@ var mdni = {
 				var stringMethodLink = '<a href="#' + arrayMethods[i] + '()">' + arrayMethods[i] + '</a>';
 				stringMDN += '<tr>\n';
 				stringMDN += '<td>';
-				stringMDN += '<code>' + objInterface.methods[arrayMethodsIHash].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '').replace(/\[out,\s{0,1}retval\]/gi,'[out]') + '</code>';
+				stringMDN += '<code>' + objInterface.methods[arrayMethodsIHash].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '').replace(/\[out,\s?retval\]/gi,'[out]') + '</code>';
 				stringMDN += objInterface.methods[arrayMethodsIHash].notxpcomText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].noscriptText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].minversionText;
@@ -1047,6 +1059,13 @@ var mdni = {
 		stringMDN += '<h2 name="' + this.lz_SeeAlso_Name + '">' + this.lz_SeeAlso + '</h2>\n';
 		stringMDN += '<ul>\n  <li>&nbsp;</li>\n</ul>\n';
 
+		// Could probably do this in another way, but here is ok
+		stringMDN = stringMDN.replace(/<code>true<\/code>/gi,'<code>true</code>');
+		stringMDN = stringMDN.replace(/<code>false<\/code>/gi,'<code>false</code>');
+
+		// Make lists into, well, lists
+		stringMDN = stringMDN.replace(/&lt;li&gt;(.*)&lt;\/li&gt;/g,'<li>$1</li>').replace(/&lt;ol&gt;(.*)&lt;\/ol&gt;/g,'<ol>$1</ol>').replace(/&lt;ul&gt;(.*)&lt;\/ul&gt;/g,'<ul>$1</ul>').replace(/&lt;li&gt;/g,'<li>');
+
 		this.debugTrace('createInterfaceMDN', 940, 'Finish');
 
 		return stringMDN;
@@ -1096,30 +1115,40 @@ var mdni = {
 
 	cleanupIdl: function(stringSource)
 	{
+		var cleanupIdlLine = 0;
+
 		// Remove /* */ comments from end of lines
 		var stringRemoveA = stringSource.replace(/\s*\/\*(?!\*)[^\n]*\*\/\s*(?=\n)/g, '');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveA);
 
 		// Remove // comments at beginnning of lines
 		var stringRemoveB = stringRemoveA.replace(/^\s*\/{2,2}[^\n]*\n/gm, '');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveB);
 
 		// Remove space at end of lines
 		var stringRemoveC = stringRemoveB.replace(/\s+$/gm, '');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveC);
 
 		// Neaten comments
 		// A. Put comment (normal and doxygen) start on its own line
 		var stringNeatenA = stringRemoveC.replace(/^\s*(\/\*{1,2}(?!\*))(?!$)/gm, '$1\n \* ');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenA);
 
-		// B. Put comment (normal and doxygen) end on its own line
+		// B. Put comment (normal and doxygen) end on its own line [5]
 		var stringNeatenB = stringNeatenA.replace(/\*+\/[^\n]*(?=\n)/g, '\n\*\/');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenB);
 
 		// C. Put interface { on the line with interface (useful later)
 		var stringNeatenC = stringNeatenB.replace(/(^INTERFACE[^\n]*)\n\s*\{/gim, '$1 {\n');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenC);
 
 		// Strip space at end of lines
 		var stringStripA = stringNeatenC.replace(/\s+$/gm, '');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripA);
 
 		// Strip blank lines
 		var stringStripB = stringStripA.replace(/\n+/g, '\n');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripB);
 
 		// Strip regular comments, just in case there is one around an interface
 		// Strip non comment lines outside interfaces
@@ -1198,36 +1227,60 @@ var mdni = {
 				inCodeBlock = false;
 			}
 		}
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripC);
 
 		// Strip leading spaces
 		var stringStripD = stringStripC.replace(/^\s*/gm, '');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripD);
 
-		// Strip newlines after commas in methods
+		// Strip newlines after commas in methods [10]
 		var stringStripE = stringStripD.replace(/(^(?!\*).*,)\n(?!\*)/gm, '$1 ');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripE);
 
 		// Strip newlines after brackets in methods
 		var stringStripF = stringStripE.replace(/(^(?!\*).*\()\n(?!\*)/gm, '$1');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripF);
 
 		// Strip newlines after ] if the next line does not start with a * or interface (for case of [noscript] etc on line by itself)
 		var stringStripG = stringStripF.replace(/]\n(?!\*|interface)/gm, '] ');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripG);
 
 		// Join following comments
 		var stringJoinA = stringStripG.replace(/^\*\/\n\/\**/gm, '*');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringJoinA);
 
 		// Switch 'o' style lists to '-' style
 		var stringSwitchA = stringJoinA.replace(/(^\*\s*)o(?=\s)/gm, '$1-');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringSwitchA);
 
 		// Switch '@li' style lists to '-' style (This will assume all li are unordered)
 		var stringSwitchA = stringJoinA.replace(/(^\*\s*)@li(?=\s)/gm, '$1-');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringSwitchA);
 
 		// Purge multiple blank comment lines
 		var stringPurgeA = stringSwitchA.replace(/(\*\n)+(?=\*\n)/g, '')
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
 
 		// Purge trailing blank comment lines
 		var stringPurgeA = stringPurgeA.replace(/\*\n(?=\*\/)/g, '')
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
 
 		// Purge blank comment lines before @ lines
 		var stringPurgeA = stringPurgeA.replace(/\n\*(?=\n\*\s*@)/g, '')
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+
+		// Turn e.g. into 'for example'
+		var stringPurgeA = stringPurgeA.replace(/\be\.?g\.?(?=,?\s)/gi, 'for example')
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+
+		// Turn i.e. into 'that is'
+		var stringPurgeA = stringPurgeA.replace(/\bi\.?e\.?(?=,?\s)/gi, 'that is')
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+
+		// Turn etc. into 'and so on', could be a better way than the double replace
+		var stringPurgeA = stringPurgeA.replace(/\b(?:e\.t\.c|etc)(?=[\.|\s|\)])(?=\W|$)/gi, 'and so on.').replace(/and\sso\son\.+/g,'and so on.');
+		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+
 //this.jsdump(stringPurgeA);
 		return stringPurgeA;
 

@@ -2,7 +2,7 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	<Description about="urn:mozilla:install-manifest">
 		<em:id>mdni@trevor.hobson</em:id>
-		<em:version>0.8</em:version>
+		<em:version>0.9</em:version>
 		<em:type>2</em:type>
 		<em:name>MDN Interface Documentation Generator</em:name>
 		<em:description>Generate MDN Interface Documentation from MXR IDL files.</em:description>
@@ -20,7 +20,7 @@
 			<Description>
 				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id> <!-- firefox -->
 				<em:minVersion>3.0</em:minVersion>
-				<em:maxVersion>4.0b8</em:maxVersion>
+				<em:maxVersion>4.0b8pre</em:maxVersion>
 			</Description>
 		</em:targetApplication>
 		<em:targetApplication>
