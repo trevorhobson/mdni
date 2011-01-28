@@ -2,5 +2,6 @@
 <!ENTITY generator.label								"Generator">
 <!ENTITY source.group.caption							"Source IDL">
 <!ENTITY generateMDN.label								"Generate...">
+<!ENTITY linkMDN.label									"Open URL">
 <!ENTITY sourceIdl.label								"Interface:">
 <!ENTITY tabProgress.label								"Interface/Progress">

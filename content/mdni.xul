@@ -40,7 +40,7 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/preferences/preferences.css" type="text/css"?> 
 <!DOCTYPE prefwindow SYSTEM "chrome://mdni/locale/mdni.dtd">
-<prefwindow id="mdniPreferences" class="windowDialog" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&prefwindow.label;" buttons="accept" windowtype="mozilla:mdniPreferences" persist="width height" onload="mdni.init()">
+<prefwindow id="mdniPreferences" class="windowDialog" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&prefwindow.label;" buttons="accept" defaultButton="" windowtype="mozilla:mdniPreferences" persist="width height" onload="mdni.init()">
 	<prefpane id="paneGenerator" label="&generator.label;" image="chrome://mdni/skin/mdni_generator.png" flex="1">
 
 		<tabbox id="tabboxInterfaceEditor" flex="1">
@@ -52,8 +52,9 @@
 					<vbox flex="1">
 						<hbox pack="start" align="baseline">
 							<label value="&sourceIdl.label;" control="sourceIdl" />
-							<textbox id="sourceIdl" wrap="off" flex="1"/>
-							<button label="&generateMDN.label;" oncommand="mdni.userGenerateMDN();"/>
+							<textbox id="sourceIdl" wrap="off" flex="1" onkeypress="mdni.sourceIdlKeyPress(event)"/>
+							<button id="generateMDN" label="&generateMDN.label;" oncommand="mdni.userGenerateMDN();"/>
+							<button id="linkMDN" label="&linkMDN.label;" oncommand="mdni.userLinkMDN();"/>
 						</hbox>
 						<textbox id="progress" cols="80" rows="30" newlines="pasteintact" multiline="true" wrap="off" flex="1"/>
 					</vbox>
