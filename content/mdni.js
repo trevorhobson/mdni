@@ -1097,6 +1097,12 @@ var mdni = {
 		var regInterfaceThis = new RegExp('{{interface\\("(<code>' + objInterface.interfaceName + '</code>)"\\)}}', 'gi');
 		stringMDN = stringMDN.replace(regInterfaceThis,'$1');
 
+		// Remove cases of {{interface("mozilla")}}
+		stringMDN = stringMDN.replace(/{{interface\("(mozilla)"\)}}/gi,'$1');
+
+		// Remove cases of " .. interface("mozilla") .. "
+		stringMDN = stringMDN.replace(/"\s\.\.\sinterface\("(mozilla)"\)\s\.\.\s\"/gi,'$1');
+
 		// Turn interface with method into ifmethod
 		stringMDN = stringMDN.replace(/\{\{interface\(("\w*")\)\}\}\:\:(\w*)(\(\s*\))?/g,'{{ifmethod($1,"$2")}}');
 
@@ -1325,8 +1331,8 @@ var mdni = {
 		var stringPurgeA = stringPurgeA.replace(/\b(?:e\.t\.c|etc)(?=[\.|\s|\)])(?=\W|$)/gi, 'and so on.').replace(/and\sso\son\.+/g,'and so on.');
 		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
 
-		// Turn @throw and @exception into @throws
-		var stringPurgeA = stringPurgeA.replace(/(\n\*\s*@)(?:throw|exception){1}/gi, '$1throws')
+		// Turn @throw and @exception into @throws throws
+		var stringPurgeA = stringPurgeA.replace(/(\n\*\s*@)(?:throw|exception){1}\b/gi, '$1throws')
 		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
 
 		// Turn @return into @returns
@@ -1483,8 +1489,6 @@ var mdni = {
 
 				// Add note template to notes
 				if (arrayParagraph[i].match(/^@note\s/i) !== null)
-
-
 				{
 					// Fix templates that are going to be inside notes
 					arrayParagraph[i] = arrayParagraph[i].replace(/{{([^}}]*)}}/g, '" .. $1 .. "');
