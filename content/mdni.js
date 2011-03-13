@@ -78,6 +78,12 @@ var mdni = {
 	arrayWarnings: [],
 	countWarnings: 0,
 
+	workVersionGecko: [],
+
+	nameInterface: '',
+
+	isWorking: false,
+
 	stringBundle: '',
 
 	// Localize variables
@@ -152,31 +158,31 @@ var mdni = {
 
 	userGenerateMDN: function()
 	{
-		var sourceIdl = document.getElementById("sourceIdl").value;
-		if (sourceIdl !== '')
+		var sourceInterface = document.getElementById("sourceInterface").value;
+		if (sourceInterface !== '')
 		{
-			this.generateFromMXR(sourceIdl);
+			this.generateFromMXR(sourceInterface);
 		}
 	},
 
 	userLinkMDN: function()
 	{
-		var sourceIdl = document.getElementById("sourceIdl").value;
-		var url = "https://developer.mozilla.org/en/XPCOM_Interface_Reference/"  + sourceIdl;
-		if (sourceIdl !== '')
+		var sourceInterface = document.getElementById("sourceInterface").value;
+		var url = "https://developer.mozilla.org/en/XPCOM_Interface_Reference/"  + sourceInterface;
+		if (sourceInterface !== '')
 		{
 			this.openAndReuseOneTabPerURL(url);
 		}
 	},
 
-	sourceIdlKeyPress: function(e)
+	sourceInterfaceKeyPress: function(e)
 	{
 		if (e.keyCode == 13)
 		{
-			var sourceIdl = document.getElementById("sourceIdl").value;
-			if (sourceIdl !== '')
+			var sourceInterface = document.getElementById("sourceInterface").value;
+			if (sourceInterface !== '')
 			{
-				this.generateFromMXR(sourceIdl);
+				this.generateFromMXR(sourceInterface);
 			}
 		}
 	},
@@ -185,8 +191,18 @@ var mdni = {
 * Load IDLs from MXR and generate documentation
 ***********************************************************/
 
-	generateFromMXR: function(sourceIdl)
+	generateFromMXR: function(sourceInterface)
 	{
+		if (this.isWorking == true)
+		{
+			return;
+		}
+
+		document.getElementById("generateMDN").setAttribute("disabled", "true");
+		this.isWorking = true;
+
+		this.nameInterface = sourceInterface;
+
 		// Remove existing tabs
 		this.debugTrace('generateFromMXR', 975, 'removeInterfaceTabs');
 		this.removeInterfaceEditorTabs();
@@ -202,59 +218,177 @@ var mdni = {
 		this.arrayWarnings = [];
 		this.countWarnings = 0;
 
+		this.workVersionGecko = this.versionGecko;
+
 		// Reset the progress tab
 		this.resetProgress();
 
-		this.updateProgress('Processing ' + sourceIdl);
+		this.updateProgress('Reading ' + sourceInterface);
 
-		// Loop over the Gecko versions
-		for (var i=0; i<this.versionGecko.length; i++)
+		var me = this;
+
+		this.workVersionGecko.forEach(function(workVersionGeckoItem) {
+			var versionGeckoMXRSearchUrl = 'http://mxr.mozilla.org/' + workVersionGeckoItem[0] + '/ident?i=' + sourceInterface;
+			me.findIdent(versionGeckoMXRSearchUrl, workVersionGeckoItem, 1);
+		});
+	},
+
+	findIdent: function(versionGeckoMXRSearchUrl, workVersionGeckoItem, attemptCount)
+	{
+		var me = this;
+
+		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
+		req.addEventListener("load", function() { me.findIdentLoad(workVersionGeckoItem, req); }, false);
+		req.addEventListener("error", function() { me.findIdentFailed(versionGeckoMXRSearchUrl, workVersionGeckoItem, attemptCount, req); }, false);
+		req.open('GET', versionGeckoMXRSearchUrl, true);
+		req.send(null);
+	},
+
+	findIdentLoad: function(workVersionGeckoItem, req)
+	{
+		this.debugTrace('findIdentLoad', 990, req.responseText);
+
+		var versionGeckoMXRSearchResult = req.responseText;
+
+		var findPath = new RegExp('Defined\\sas\\sa\\sinterface\\sin\\:\\s*<ul>\\s*<li>\\s*<a\\shref="\\/' + workVersionGeckoItem[0] + '\\/source\/[^>]*idl">[^<]*', 'gi');
+		var versionGeckoMXRPathPlus = versionGeckoMXRSearchResult.match(findPath);
+		if (versionGeckoMXRPathPlus !== null)
 		{
-			// Update progress
-			this.updateProgress('Start ' + this.versionGecko[i][1]);
-			this.updateProgress('Searching mxr');
-
-			var versionGeckoMXRSearchUrl = 'http://mxr.mozilla.org/' + this.versionGecko[i][0] + '/ident?i=' + sourceIdl;
-			var versionGeckoMXRSearchResult = this.readRemoteFile(versionGeckoMXRSearchUrl, 'text');
-			if (versionGeckoMXRSearchResult !== null)
+			var versionGeckoMXRPath = versionGeckoMXRPathPlus[0].match(/[^>]*$/);
+			if (versionGeckoMXRPath !== null)
 			{
+				this.updateProgress(workVersionGeckoItem[1] + ' path found - ' + versionGeckoMXRPath);
+				workVersionGeckoItem[3] = versionGeckoMXRPath;
+				var versionGeckoMXRIdlUrl = 'http://mxr.mozilla.org/' + workVersionGeckoItem[0] + '/source/' + versionGeckoMXRPath +'?raw=1';
 
-				var findPath = new RegExp('Defined\\sas\\sa\\sinterface\\sin\\:\\s*<ul>\\s*<li>\\s*<a\\shref="\\/' + this.versionGecko[i][0] + '\\/source\/[^>]*idl">[^<]*', 'gi');
-				var versionGeckoMXRPathPlus = versionGeckoMXRSearchResult.match(findPath);
-				if (versionGeckoMXRPathPlus !== null)
-				{
-					var versionGeckoMXRPath = versionGeckoMXRPathPlus[0].match(/[^>]*$/);
-					if (versionGeckoMXRPath !== null)
-					{
-						this.updateProgress(' Path found - ' + versionGeckoMXRPath);
-						var versionGeckoMXRIdlUrl = 'http://mxr.mozilla.org/' + this.versionGecko[i][0] + '/source/' + versionGeckoMXRPath[0] +'?raw=1';
-						var versionGeckoMXRIdlText = this.readRemoteFile(versionGeckoMXRIdlUrl, 'text');
-						if (versionGeckoMXRIdlText !== null)
-						{
-							this.updateProgress('  File read');
-							var versionGeckoMXRIdlTextClean = this.cleanupIdl(versionGeckoMXRIdlText);
-							this.updateInterfaces(versionGeckoMXRIdlTextClean, versionGeckoMXRPath[0], this.versionGecko, i, sourceIdl);
-						}
-						else
-						{
-							this.updateProgress('  ERROR - Reading file');
-						}
-					}
-					else
-					{
-						this.updateProgress(' Path NOT found');
-					}
-				}
-				else
-				{
-					this.updateProgress(' Path NOT found');
-				}
+				this.getIdl(workVersionGeckoItem, versionGeckoMXRIdlUrl)
 			}
 			else
 			{
-				this.updateProgress(' ERROR - mxr');
+				this.updateProgress(workVersionGeckoItem[1] + ' path NOT found');
+				workVersionGeckoItem[2] = 'done';
+				workVersionGeckoItem[3] = 'Path NOT found';
 			}
-			this.updateProgress('Finish ' + this.versionGecko[i][1]);
+		}
+		else
+		{
+			this.updateProgress(workVersionGeckoItem[1] + ' path NOT found');
+			workVersionGeckoItem[2] = 'done';
+			workVersionGeckoItem[3] = 'Path NOT found';
+		}
+
+	},
+
+	findIdentFailed: function(versionGeckoMXRSearchUrl, workVersionGeckoItem, attemptCount, req)
+	{
+		this.debugTrace('findIdentFailed', 990, workVersionGeckoItem[1] + ' (' + attemptCount + ') ' + req.responseText);
+
+		// If there was an error, try again (up to 3 times)
+		if (attemptCount < 4)
+		{
+			this.findIdent(versionGeckoMXRSearchUrl, workVersionGeckoItem, attemptCount++);
+		}
+		else
+		{
+			this.debugTrace('findIdentFailed', 950, workVersionGeckoItem[1]);
+			this.updateProgress('Failed to locate IDL for ' + workVersionGeckoItem[1]);
+			workVersionGeckoItem[2] = 'failed';
+		}
+	},
+
+	getIdl: function(workVersionGeckoItem, versionGeckoMXRIdlUrl)
+	{
+		var me = this;
+
+		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
+		req.addEventListener("load", function() { me.getIdlLoad(workVersionGeckoItem, req); }, false);
+		req.addEventListener("error", function() { me.getIdlFailed(versionGeckoMXRIdlUrl, workVersionGeckoItem, attemptCount, req); }, false);
+		req.open('GET', versionGeckoMXRIdlUrl, true);
+		req.send(null);
+
+	},
+
+	getIdlLoad: function(workVersionGeckoItem, req)
+	{
+		this.debugTrace('getIdlLoad', 989, '\n' + req.responseText);
+
+		var versionGeckoMXRIdlText = req.responseText;
+		workVersionGeckoItem[5] = versionGeckoMXRIdlText;
+
+		this.updateProgress(workVersionGeckoItem[1] + ' file read');
+		var versionGeckoMXRIdlTextClean = this.cleanupIdl(versionGeckoMXRIdlText);
+
+		workVersionGeckoItem[4] = versionGeckoMXRIdlTextClean;
+		workVersionGeckoItem[2] = 'done';
+		this.continueIfReadsComplete();
+	},
+
+	getIdlFailed: function(versionGeckoMXRIdlUrl, workVersionGeckoItem, attemptCount, req)
+	{
+		this.debugTrace('getIdlFailed', 989, workVersionGeckoItem[1] + ' (' + attemptCount + ') ' + req.responseText);
+
+		// If there was an error, try again (up to 3 times)
+		if (attemptCount < 4)
+		{
+			this.findIdent(versionGeckoMXRIdlUrl, workVersionGeckoItem, attemptCount++);
+		}
+		else
+		{
+			this.debugTrace('getIdlFailed', 950, workVersionGeckoItem[1]);
+			this.updateProgress('Failed to get IDL for ' + workVersionGeckoItem[1]);
+			workVersionGeckoItem[2] = 'failed';
+			this.continueIfReadsComplete();
+		}
+	},
+
+	continueIfReadsComplete: function()
+	{
+		var isComplete = true;
+		var isFailed = false;
+
+		for (var i=0; i<this.workVersionGecko.length; i++)
+		{
+			if (this.workVersionGecko[i][2] != 'done')
+			{
+				isComplete = false;
+			}
+			if (this.workVersionGecko[i][2] == 'failed')
+			{
+				isFailed = true;
+			}
+		}
+		if (isComplete && !isFailed)
+		{
+			this.updateProgress('Reading complete');
+			this.processInterfaceVersions();
+		}
+		else if (isComplete && isFailed)
+		{
+			this.updateProgress('Reading failed');
+		}
+	},
+
+	// Loop through the interface versions and process them
+	processInterfaceVersions: function()
+	{
+		this.updateProgress('Processing');
+		for (var i=0; i<this.workVersionGecko.length; i++)
+		{
+			// Quick and diry checks to see if we actually need to process this version
+			if (this.workVersionGecko[i][3] == 'Path NOT found')
+			{
+				continue;
+			}
+			if (i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4])
+			{
+				this.updateProgress('Processing ' + this.workVersionGecko[i][1] + ' == ' + this.workVersionGecko[i+1][1]);
+				continue;
+			}
+			else
+			{
+				this.updateProgress('Processing ' + this.workVersionGecko[i][1]);
+				this.updateInterfaces(this.workVersionGecko[i][4], this.workVersionGecko, i, this.nameInterface);
+			}
 		}
 
 		this.debugTrace('generateFromMXR', 950, 'generateStringMDN');
@@ -279,12 +413,16 @@ var mdni = {
 		}
 
 		// Add source to tabs
-		this.addInterfaceEditorTab('Source', versionGeckoMXRIdlText);
+		this.addInterfaceEditorTab('Source', this.workVersionGecko[this.workVersionGecko.length-1][5]);
 
-		this.updateProgress('Complete ' + sourceIdl);
+		this.updateProgress('Processing complete');
+
+		document.getElementById("generateMDN").removeAttribute("disabled");
+		this.isWorking = false;
+
 	},
 
-	updateInterfaces: function(cleanIdl, pathIdl, sourceVersionGecko, sourceVersionGeckoIndex, sourceIdl)
+	updateInterfaces: function(cleanIdl, sourceVersionGecko, sourceVersionGeckoIndex, sourceInterface)
 	{
 		this.debugTrace('updateInterfaces', 985, 'cleanIdl :\n' + cleanIdl);
 
@@ -332,7 +470,7 @@ var mdni = {
 				this.debugTrace('updateInterfaces', 960, 'foundInterface ' + interfaceName);
 
 				// Check if we want to keep this interface (is the one we are after)
-				if (interfaceName == sourceIdl)
+				if (interfaceName == sourceInterface)
 				{
 					isWanted = true;
 
@@ -351,7 +489,7 @@ var mdni = {
 						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
 						this.objInterfaceSource.constantsChanged = false;
 					}
-					this.objInterfaceSource.path = pathIdl;
+//					this.objInterfaceSource.path = pathIdl;
 					this.objInterfaceSource.scriptable = interfaceScriptable;
 					this.objInterfaceSource.inherits = interfaceInherits;
 					this.objInterfaceSource.versionLast = sourceVersionGeckoIndex;
@@ -1122,44 +1260,6 @@ var mdni = {
 	},
 
 /***********************************************************
-* IDL Manipulation to MDN - From single source
-***********************************************************/
-
-	generateMDN: function(sourceStringIdl)
-	{
-		// Create dummy variables
-		var dummyVersionGecko = [['', 'manual']];
-		var dummyMXRPath = '||Unknown||';
-
-		// Reset the Interfaces object
-		this.objInterfaceSources = {};
-
-		// Reset the Warnings array
-		this.arrayWarnings =[];
-
-		var stringIdlClean = this.cleanupIdl(sourceStringIdl);
-		this.updateInterfaces(stringIdlClean, dummyMXRPath, dummyVersionGecko, 0);
-
-		// Remove existing tabs
-		this.removeInterfaceEditorTabs();
-
-		// Create Interface MDN and add to tabs
-		for each (var objInterface in this.objInterfaceSources)
-		{
-			// Generate string
-			var stringMDN = this.createInterfaceMDN(objInterface, dummyVersionGecko);
-
-			// Add Interface to tabs
-			this.addInterfaceEditorTab(objInterface.interfaceName, stringMDN);
-		}
-
-		if (this.arrayWarnings.length > 0)
-		{
-			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
-		}
-	},
-
-/***********************************************************
 * Source cleanup
 ***********************************************************/
 
@@ -1167,45 +1267,47 @@ var mdni = {
 	{
 		var cleanupIdlLine = 0;
 
+		var stringClean = stringSource;
+
 		// Remove /* */ comments from end of lines
-		var stringRemoveA = stringSource.replace(/\s*\/\*(?!\*)[^\n]*\*\/\s*(?=\n)/g, '');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveA);
+		var stringClean = stringClean.replace(/\s*\/\*(?!\*)[^\n]*\*\/\s*(?=\n)/g, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Remove // comments at beginnning of lines
-		var stringRemoveB = stringRemoveA.replace(/^\s*\/{2,2}[^\n]*\n/gm, '');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveB);
+		var stringClean = stringClean.replace(/^\s*\/{2,2}[^\n]*\n/gm, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Remove space at end of lines
-		var stringRemoveC = stringRemoveB.replace(/\s+$/gm, '');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringRemoveC);
+		var stringClean = stringClean.replace(/\s+$/gm, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Neaten comments
-		// A. Put comment (normal and doxygen) start on its own line
-		var stringNeatenA = stringRemoveC.replace(/^\s*(\/\*{1,2}(?!\*))(?!$)/gm, '$1\n \* ');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenA);
+		// Put comment (normal and doxygen) start on its own line
+		var stringClean = stringClean.replace(/^\s*(\/\*{1,2}(?!\*))(?!$)/gm, '$1\n \* ');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
-		// B. Put comment (normal and doxygen) end on its own line [5]
-		var stringNeatenB = stringNeatenA.replace(/\*+\/[^\n]*(?=\n)/g, '\n\*\/');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenB);
+		// Put comment (normal and doxygen) end on its own line [5]
+		var stringClean = stringClean.replace(/\*+\/[^\n]*(?=\n)/g, '\n\*\/');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
-		// C. Put interface { on the line with interface (useful later)
-		var stringNeatenC = stringNeatenB.replace(/(^INTERFACE[^\n]*)\n\s*\{/gim, '$1 {\n');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringNeatenC);
+		// Put interface { on the line with interface (useful later)
+		var stringClean = stringClean.replace(/(^INTERFACE[^\n]*)\n\s*\{/gim, '$1 {\n');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
-		// Strip space at end of lines
-		var stringStripA = stringNeatenC.replace(/\s+$/gm, '');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripA);
+		// Strip space at end of lines (needed again)
+		var stringClean = stringClean.replace(/\s+$/gm, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip blank lines
-		var stringStripB = stringStripA.replace(/\n+/g, '\n');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripB);
+		var stringClean = stringClean.replace(/\n+/g, '\n');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip regular comments, just in case there is one around an interface
 		// Strip non comment lines outside interfaces
 		// Strip code blocks
 		// Add * to doxygen comments that are missing them
-		var stringStripLines = stringStripB.match(/[^\n]*(?:\n|$)/g);
-		var stringStripC = '';
+		var stringStripLines = stringClean.match(/[^\n]*(?:\n|$)/g);
+		var stringClean = '';
 		var spaceStar = 0;
 		var inInterface = false;
 		var inCommentRegular = false;
@@ -1226,13 +1328,13 @@ var mdni = {
 			// If this is the beginning of a doxygen comment
 			else if (stringStripLines[i].match(/\s*\/\*{2,2}/) !== null && !inCodeBlock)
 			{
-				stringStripC += stringStripLines[i];
+				stringClean += stringStripLines[i];
 				inCommentDoxygen = true;
 			}
 			// If this is the beginning of an interface
 			else if (stringStripLines[i].match(/INTERFACE[^\{]*{/i) !== null && !inCodeBlock)
 			{
-				stringStripC += stringStripLines[i];
+				stringClean += stringStripLines[i];
 				inInterface = true;
 			}
 			else if (!inCommentRegular && !inCodeBlock)
@@ -1240,12 +1342,12 @@ var mdni = {
 				// Add missing * in doxygen comments
 				if (inCommentDoxygen && stringStripLines[i].match(/^\s*\*/) == null)
 				{
-					stringStripC += '*';
+					stringClean += '*';
 					// Try and keep alignment (mainly for lists)
 					if (spaceStar > 0)
 					{
 						spaceStarReg =  new RegExp('^\\s\{' + spaceStar + ',' + spaceStar + '\}');
-						stringStripC += stringStripLines[i].replace(spaceStarReg, '');
+						stringClean += stringStripLines[i].replace(spaceStarReg, '');
 					}
 				}
 				else if (inCommentDoxygen)
@@ -1254,12 +1356,12 @@ var mdni = {
 					{
 						spaceStar = stringStripLines[i].match(/^\s*\*/)[0].length;
 					}
-					stringStripC += stringStripLines[i];
+					stringClean += stringStripLines[i];
 				}
 				// If line is in interface or is uuid line
 				else if (inInterface || (stringStripLines[i].match(/\[.*uuid.*\]/) != null))
 				{
-					stringStripC += stringStripLines[i];
+					stringClean += stringStripLines[i];
 				}
 			}
 			if (stringStripLines[i].match(/\};$/) !== null)
@@ -1277,70 +1379,91 @@ var mdni = {
 				inCodeBlock = false;
 			}
 		}
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripC);
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip leading spaces
-		var stringStripD = stringStripC.replace(/^\s*/gm, '');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripD);
+		var stringClean = stringClean.replace(/^\s*/gm, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip newlines after commas in methods [10]
-		var stringStripE = stringStripD.replace(/(^(?!\*).*,)\n(?!\*)/gm, '$1 ');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripE);
+		var stringClean = stringClean.replace(/(^(?!\*).*,)\n(?!\*)/gm, '$1 ');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip newlines after brackets in methods
-		var stringStripF = stringStripE.replace(/(^(?!\*).*\()\n(?!\*)/gm, '$1');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripF);
+		var stringClean = stringClean.replace(/(^(?!\*).*\()\n(?!\*)/gm, '$1');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Strip newlines after ] if the next line does not start with a * or interface (for case of [noscript] etc on line by itself)
-		var stringStripG = stringStripF.replace(/]\n(?!\*|interface)/gm, '] ');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringStripG);
+		var stringClean = stringClean.replace(/]\n(?!\*|interface)/gm, '] ');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Join following comments
-		var stringJoinA = stringStripG.replace(/^\*\/\n\/\**/gm, '*');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringJoinA);
+		var stringClean = stringClean.replace(/^\*\/\n\/\**/gm, '*');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Switch 'o' style lists to '-' style
-		var stringSwitchA = stringJoinA.replace(/(^\*\s*)o(?=\s)/gm, '$1-');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringSwitchA);
+		var stringClean = stringClean.replace(/(^\*\s*)o(?=\s)/gm, '$1-');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Switch '@li' style lists to '-' style (This will assume all li are unordered) [15]
-		var stringSwitchA = stringJoinA.replace(/(^\*\s*)@li(?=\s)/gm, '$1-');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringSwitchA);
+		var stringClean = stringClean.replace(/(^\*\s*)@li(?=\s)/gm, '$1-');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Purge multiple blank comment lines
-		var stringPurgeA = stringSwitchA.replace(/(\*\n)+(?=\*\n)/g, '')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+		var stringClean = stringClean.replace(/(\*\n)+(?=\*\n)/g, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Purge trailing blank comment lines
-		var stringPurgeA = stringPurgeA.replace(/\*\n(?=\*\/)/g, '')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+		var stringClean = stringClean.replace(/\*\n(?=\*\/)/g, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Purge blank comment lines before @ lines
-		var stringPurgeA = stringPurgeA.replace(/\n\*(?=\n\*\s*@)/g, '')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+		var stringClean = stringClean.replace(/\n\*(?=\n\*\s*@)/g, '');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
-		// Turn e.g. into 'for example' [20]
-		var stringPurgeA = stringPurgeA.replace(/\be\.?g\.?(?=,?\s)/gi, 'for example')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
-
-		// Turn i.e. into 'that is'
-		var stringPurgeA = stringPurgeA.replace(/\bi\.?e\.?(?=,?\s)/gi, 'that is')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
-
-		// Turn etc. into 'and so on', could be a better way than the double replace
-		var stringPurgeA = stringPurgeA.replace(/\b(?:e\.t\.c|etc)(?=[\.|\s|\)])(?=\W|$)/gi, 'and so on.').replace(/and\sso\son\.+/g,'and so on.');
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
-
-		// Turn @throw and @exception into @throws throws
-		var stringPurgeA = stringPurgeA.replace(/(\n\*\s*@)(?:throw|exception){1}\b/gi, '$1throws')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+		// Turn @throw and @exception into @throws [20]
+		var stringClean = stringClean.replace(/(\n\*\s*@)(?:throw|exception){1}\b/gi, '$1throws');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
 		// Turn @return into @returns
-		var stringPurgeA = stringPurgeA.replace(/(\n\*\s*@)(?:return){1}s+/gi, '$1returns')
-		this.debugTrace('cleanupIdl', 990, ' [' + ++cleanupIdlLine + ']\n' + stringPurgeA);
+		var stringClean = stringClean.replace(/(\n\*\s*@)(?:return){1}\b/gi, '$1returns');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
 
-//this.jsdump(stringPurgeA);
-		return stringPurgeA;
+		// Replace abbreviations
+		// Turn e.g. into 'for example'
+		var stringClean = stringClean.replace(/\be\.?g\.?(?=,?\s)/gi, 'for example');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Turn i.e. into 'that is'
+		var stringClean = stringClean.replace(/\bi\.?e\.?(?=,?\s)/gi, 'that is');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Turn etc. into 'and so on', could be a better way than the double replace
+		var stringClean = stringClean.replace(/\b(?:e\.t\.c|etc)(?=[\.|\s|\)])(?=\W|$)/gi, 'and so on.').replace(/and\sso\son\.+/g,'and so on.');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Replace contractions
+		// Turn can't [25]
+		var stringClean = stringClean.replace(/\bcan't\b/gi, 'can not');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Turn won't into 'will not'
+		var stringClean = stringClean.replace(/\bwon't\b/gi, 'will not');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Replace couldn't, didn't, don't, isn't, shouldn't, wasn't, weren't
+		var stringClean = stringClean.replace(/\b(could|did|do|have|is|should|was|were)n't\b/gi, '$1 not');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Replace it'll
+		var stringClean = stringClean.replace(/\bit'll\b/gi, 'it will');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		// Replace it's
+		var stringClean = stringClean.replace(/\bit's\b/gi, 'it is');
+		this.debugTrace('cleanupIdl', 987, ' [' + ++cleanupIdlLine + ']\n' + stringClean);
+
+		return stringClean;
 
 	},
 
@@ -1516,7 +1639,7 @@ var mdni = {
 						{
 							atType = null;
 						}
-						if (atType === '@param' || atType === '@throw' || atType === '@throws')
+						if (atType === '@param' || atType === '@throws')
 						{
 							// Strip leading in/out from description (sometimes out is before name)
 							arrayParagraph[i] = arrayParagraph[i].replace(/^(?:in\b|out\b|\[(?:in|out)\])\s*(?:-\s*)*/i, '');
@@ -1556,7 +1679,7 @@ var mdni = {
 							objGeneric.parameters[atNameLower].nameText = atName;
 							objGeneric.parameters[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if ((atType === '@throw' || atType === '@throws') && atName) // Exception
+						else if (atType === '@throws' && atName) // Exception
 						{
 							// If object does not have exceptions
 							if (!objGeneric.exceptions)
@@ -1571,7 +1694,7 @@ var mdni = {
 							objGeneric.exceptions[atNameLower].nameText = atName;
 							objGeneric.exceptions[atNameLower].description = this.firstCaps(arrayParagraph[i]);
 						}
-						else if (atType === '@return' || atType === '@returns') // Returns
+						else if (atType === '@returns') // Returns
 						{
 							// If object does not have returns
 							if (!objGeneric.returns)
@@ -1798,41 +1921,6 @@ var mdni = {
 		return stringParagraph.charAt(0).toUpperCase() + stringParagraph.substr(1);
 	},
 
-	// Evaluate an xpath expression against a given node
-	// aType is one of the XPathResult constants - defaults to ANY
-	//  : 0 - ANY : 1 - NUMBER : 2 - STRING : 3 - BOOLEAN : 4 - UNORDERED_NODE_ITERATOR
-	//  : 5 - ORDERED_NODE_ITERATOR : 6 - UNORDERED_NODE_SNAPSHOT : 7 - ORDERED_NODE_SNAPSHOT
-	//  : 8 - ANY_UNORDERED_NODE : 9 - FIRST_ORDERED_NODE
-	evaluateXPath: function(aNode, aExpr, aType)
-	{
-		aType = aType == null ? 0 : Number(aType);
-		var xmlDoc = aNode.ownerDocument == null ? aNode : aNode.ownerDocument;
-		var nsResolver = xmlDoc.createNSResolver(xmlDoc.documentElement);
-		var result = xmlDoc.evaluate(aExpr, aNode, nsResolver, aType, null);
-		result.QueryInterface(Components.interfaces.nsIDOMXPathResult);  // not necessary in FF3, only 2.x and possibly earlier
-		if (aType == 0)
-		{
-			aType = result.resultType;
-		}
-		switch(aType)
-		{
-			case 1:
-				return result.numberValue;
-				break;
-
-			case 2:
-				return result.stringValue;
-				break;
-
-			case 3:
-				return result.booleanValue;
-				break;
-
-			default:
-				return result;
-		}
-	},
-
 	// Create hash of a string (used to prevent names causing problems)
 	stringHash: function(stringToHash)
 	{
@@ -1850,34 +1938,6 @@ var mdni = {
 
 		return hash;
 
-	},
-
-/***********************************************************
-* Functions to read files
-***********************************************************/
-
-	// Read remote file (synchronous)
-	// returnType - xml or text
-	readRemoteFile: function(urlFile, returnType)
-	{
-		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
-		req.open('GET', urlFile, false); 
-		req.send(null);
-		if (req.status == 200)
-		{
-			if (returnType == 'xml')
-			{
-				return req.responseXML;
-			}
-			else
-			{
-				return req.responseText;
-			}
-		}
-		else
-		{
-			this.debugTrace('readRemoteFile', 900, 'status ' + req.status + ' url ' + urlFile);
-		}
 	},
 
 /***********************************************************

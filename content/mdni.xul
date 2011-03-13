@@ -51,8 +51,8 @@
 				<tabpanel id="tabProgress" flex="1">
 					<vbox flex="1">
 						<hbox pack="start" align="baseline">
-							<label value="&sourceIdl.label;" control="sourceIdl" />
-							<textbox id="sourceIdl" wrap="off" flex="1" onkeypress="mdni.sourceIdlKeyPress(event)"/>
+							<label value="&sourceInterface.label;" control="sourceInterface" />
+							<textbox id="sourceInterface" wrap="off" flex="1" onkeypress="mdni.sourceInterfaceKeyPress(event)"/>
 							<button id="generateMDN" label="&generateMDN.label;" oncommand="mdni.userGenerateMDN();"/>
 							<button id="linkMDN" label="&linkMDN.label;" oncommand="mdni.userLinkMDN();"/>
 						</hbox>
