@@ -39,31 +39,36 @@ var mdni = {
 
 	// Production list
 
-	versionGecko: [
+	versionGeckoDefault: [
 		['mozilla1.7', '1.7'],
 		['mozilla1.8', '1.8'],
 		['firefox2', '1.8.1'],
 		['firefox', '1.9'],
 		['mozilla1.9.1', '1.9.1'],
 		['mozilla1.9.2', '1.9.2'],
-//		['mozilla2.0', '2.0'],
-		['mozilla-central', '2.0'],
+		['mozilla2.0', '2.0'],
+		['mozilla-aurora', '5.0'],
+		['mozilla-central', '6.0'],
 	],
 
 /*
 	// Testing list
-	versionGecko: [
+	versionGeckoDefault: [
 		['mozilla1.7', '1.7'],
-		['mozilla-central', '2.0'],
+		['mozilla-central', '6.0'],
 	],
 */
 
-	// List of interfaces to use to create interface links.
+	geckoListUrl: "https://developer.mozilla.org/samples/mdniprefs.txt",
+
+	// List of interfaces to use to create interface links (Not a complete list, but cuts the workload)
 	listInterfaces: 'amIInstallCallback|amIInstallTrigger|amIWebInstaller|amIWebInstallInfo|amIWebInstallListener|amIWebInstallPrompt|DOMException|extIApplication|extIConsole|extIEventItem|extIEventListener|extIEvents|extIExtension|extIExtensions|extIExtensionsCallback|extIPreference|extIPreferenceBranch|extISessionStorage|fuelIAnnotations|fuelIApplication|fuelIBookmark|fuelIBookmarkFolder|fuelIBookmarkRoots|fuelIBrowserTab|fuelIWindow|gfxIFormats|IAccessible2|IAccessibleAction|IAccessibleApplication|IAccessibleComponent|IAccessibleEditableText|IAccessibleHyperlink|IAccessibleHypertext|IAccessibleImage|IAccessibleRelation|IAccessibleTable|IAccessibleTable2|IAccessibleTableCell|IAccessibleText|IAccessibleValue|IDispatch|imgICache|imgIContainer|imgIContainerDebug|imgIContainerObserver|imgIDecoderObserver|imgIEncoder|imgILoader|imgIRequest|imgITools|IMozControlBridge|IMozPluginHostCtrl|inICSSValueSearch|inIDeepTreeWalker|inIDOMUtils|inIDOMView|inIFlasher|inISearchObserver|inISearchProcess|ISimpleDOMDocument|ISimpleDOMNode|ISimpleDOMText|IWeaveCrypto|IWebBrowser|IWebBrowser2|IWebBrowserApp|IXMLDocument|IXMLElement|IXMLElementCollection|IXMLError|jsdIActivationCallback|jsdICallHook|jsdIContext|jsdIContextEnumerator|jsdIDebuggerService|jsdIEphemeral|jsdIErrorHook|jsdIExecutionHook|jsdIFilter|jsdIFilterEnumerator|jsdINestCallback|jsdIObject|jsdIProperty|jsdIScript|jsdIScriptEnumerator|jsdIScriptHook|jsdIStackFrame|jsdIValue|LSException|nsAString|nsMenuBarX|nsPICertNotification|nsPICommandUpdater|nsPIDNSService|nsPIDOMWindow|nsPIEditorTransaction|nsPIExternalAppLauncher|nsPIPlacesDatabase|nsPIPlacesHistoryListenersNotifier|nsPIPromptService|nsPISocketTransportService|nsPIWidgetCocoa|nsPIWindowWatcher|RangeException|rdfIDataSource|rdfISerializer|rdfITripleVisitor|testNotscriptableInterface|testScriptableInterface|txIEXSLTRegExFunctions|txIFunctionEvaluationContext|txINodeSet|txIXPathObject|XPathException|xpcIJSGetFactory|xpcIJSModuleLoader|xpcIJSWeakReference|xptiITestInterface',
 
 	nsIConsoleService: Components.classes['@mozilla.org/consoleservice;1'].getService(Components.interfaces.nsIConsoleService),
 
 	nsIDOMSerializer: Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer),
+
+	nsIJSON: Components.classes["@mozilla.org/dom/json;1"].createInstance(Components.interfaces.nsIJSON),
 
 	nsIScriptableUnicodeConverter: Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter),
 	nsICryptoHash: Components.classes["@mozilla.org/security/hash;1"].createInstance(Components.interfaces.nsICryptoHash),
@@ -73,10 +78,12 @@ var mdni = {
 
 	debugTraceLevels: {},
 
-	objInterface: {},
+	objInterfaceSource: {},
 
 	arrayWarnings: [],
 	countWarnings: 0,
+
+	versionGecko: [],
 
 	workVersionGecko: [],
 
@@ -149,8 +156,130 @@ var mdni = {
 		this.lz_ExceptionsThrown_Name = this.stringBundle.getString('ExceptionsThrown_Name');
 		this.lz_MissingDescription = this.stringBundle.getString('MissingDescription');
 		this.lz_MissingException = this.stringBundle.getString('MissingException');
+
+		this.updateProgress('Initialising');
+		this.getGeckoList();
 	},
 
+	getGeckoList: function()
+	{
+		this.updateProgress('Getting MXR Gecko list from MDN');
+		var me = this;
+
+		var req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Components.interfaces.nsIXMLHttpRequest);
+		req.addEventListener("load", function() { me.getGeckoListLoad(req); }, false);
+		req.addEventListener("error", function() { me.getGeckoListFailed(req); }, false);
+		req.open('GET', this.geckoListUrl, true);
+		req.channel.loadFlags |= Components.interfaces.nsIRequest.LOAD_BYPASS_CACHE;
+		req.send(null);
+	},
+
+	getGeckoListLoad: function(req)
+	{
+		this.debugTrace('getGeckoListLoad', 989, '\n' + req.responseText);
+
+		var geckoListText = req.responseText;
+
+		var geckoListJS = null;
+		try
+		{
+			geckoListJS = this.nsIJSON.decode(geckoListText);
+			if (geckoListJS.header && geckoListJS.array && geckoListJS.header == "mdni - MXR Gecko list.")
+			{
+				this.updateProgress('Parsing MXR Gecko list from MDN');
+
+				// Process the file and set the user preference and variables
+				this.processGeckoList(geckoListJS, geckoListText, true, true);
+			}
+			else
+			{
+				this.updateProgress('The MXR Gecko list from MDN is invalid!');
+				this.fallbackGeckoListPref();
+			}
+		}
+		catch (err)
+		{
+			this.updateProgress('The MXR Gecko list from MDN is invalid!');
+			this.fallbackGeckoListPref();
+		}
+	},
+
+	getGeckoListFailed: function(req)
+	{
+		this.debugTrace('getGeckoListFailed', 989, '\n' + req.responseText);
+
+		// There was an error, so fallback to user preference version
+		this.updateProgress('Unable to load MXR Gecko list from MDN!');
+		this.fallbackGeckoListPref();
+
+	},
+
+	fallbackGeckoListPref: function()
+	{
+		this.updateProgress('Falling back to cached list');
+		var cacheText = 'missing';
+		try {cacheText = this.prefmdni.getCharPref("geckoList");}catch (err) {}
+		if (cacheText === 'missing')
+		{
+			this.updateProgress('No cached MXR Gecko list!');
+			this.updateProgress('Falling back to defaults');
+			this.completedGeckoList(true);
+		}
+		else
+		{
+			this.debugTrace('fallbackGeckoListPref', 989, '\n' + cacheText);
+			try
+			{
+				var geckoListJS = this.nsIJSON.decode(cacheText);
+				this.processGeckoList(geckoListJS, cacheText, false, false);
+			}
+			catch (err)
+			{
+				this.updateProgress('Unable to process cached MXR Gecko list!');
+				this.updateProgress('Falling back to defaults');
+				this.completedGeckoList(true);
+			}
+		}
+	},
+
+	processGeckoList: function(geckoListJS, sourceList, setPreference, allowFallback)
+	{
+		if (geckoListJS.array.length > 0)
+		{
+			if (setPreference)
+			{
+				this.prefmdni.setCharPref("geckoList",sourceList);
+			}
+			this.versionGecko = geckoListJS.array;
+			this.updateProgress('Parsing MXR Gecko list complete');
+			this.completedGeckoList();
+		}
+		else if (allowFallback)
+		{
+			this.updateProgress('Invalid MXR Gecko list from MDN!');
+			this.fallbackGeckoListPref()
+		}
+		else
+		{
+			this.updateProgress('Unable to process cached MXR Gecko list!');
+			this.updateProgress('Falling back to defaults');
+			this.completedGeckoList(true);
+		}
+	},
+
+	completedGeckoList: function(fallbackDefault)
+	{
+		if (fallbackDefault)
+		{
+			this.versionGecko = this.versionGeckoDefault;
+		}
+
+		this.debugTrace('completedGeckoList', 989, 'Enabling user interface');
+		document.getElementById("sourceInterface").removeAttribute("disabled");
+		document.getElementById("generateMDN").removeAttribute("disabled");
+		document.getElementById("linkMDN").removeAttribute("disabled");
+		this.updateProgress('Initialising complete');
+	},
 
 /***********************************************************
 * UI User Events
@@ -218,7 +347,11 @@ var mdni = {
 		this.arrayWarnings = [];
 		this.countWarnings = 0;
 
-		this.workVersionGecko = this.versionGecko;
+		// Set the working version gecko array
+		for (var i=0; i<this.versionGecko.length; i++)
+		{
+			this.workVersionGecko[i] = this.versionGecko[i].slice();
+		}
 
 		// Reset the progress tab
 		this.resetProgress();
@@ -379,7 +512,7 @@ var mdni = {
 			{
 				continue;
 			}
-			if (i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4])
+			if (i != 0 && i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4] && this.workVersionGecko[i-1][3] != 'Path NOT found')
 			{
 				this.updateProgress('Processing ' + this.workVersionGecko[i][1] + ' == ' + this.workVersionGecko[i+1][1]);
 				continue;
@@ -489,7 +622,7 @@ var mdni = {
 						this.objInterfaceSource.versionLastAddition = sourceVersionGeckoIndex;
 						this.objInterfaceSource.constantsChanged = false;
 					}
-//					this.objInterfaceSource.path = pathIdl;
+					this.objInterfaceSource.path = sourceVersionGecko[sourceVersionGeckoIndex][3];
 					this.objInterfaceSource.scriptable = interfaceScriptable;
 					this.objInterfaceSource.inherits = interfaceInherits;
 					this.objInterfaceSource.versionLast = sourceVersionGeckoIndex;
@@ -1044,6 +1177,7 @@ var mdni = {
 							levelBracket--;
 						}
 						else if (currentChar == ',' && levelBracket == 0)
+
 						{
 							arrayMethodParameters[++countPatameters] = '';
 						}
@@ -1571,6 +1705,7 @@ var mdni = {
 				}
 			}
 			// Continue the paragraph
+
 			else
 			{
 				arrayParagraph[currentParagraph] += sourceCommentLines[i].replace(/\*\s*/, ' ');
