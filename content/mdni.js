@@ -518,7 +518,7 @@ var mdni = {
 		this.updateProgress('Processing');
 		for (var i=0; i<this.workVersionGecko.length; i++)
 		{
-			// Quick and diry checks to see if we actually need to process this version
+			// Quick and dirty checks to see if we actually need to process this version
 			if (this.workVersionGecko[i][3] == 'Path NOT found')
 			{
 				continue;
@@ -527,9 +527,11 @@ var mdni = {
 			{
 				lastImplemented = i;
 			}
-			if (i != 0 && i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4] && this.workVersionGecko[i-1][3] != 'Path NOT found')
+			// Do not process if it is the same as the previous version
+/* This is not working properly, causes the wrong last changed in version to be reported
+			if (i != 0 && i < this.workVersionGecko.length && this.workVersionGecko[i][4] == this.workVersionGecko[i-1][4] && this.workVersionGecko[i-1][3] != 'Path NOT found')
 			{
-				this.updateProgress('Processing ' + this.workVersionGecko[i][1] + ' == ' + this.workVersionGecko[i+1][1]);
+				this.updateProgress('Processing ' + this.workVersionGecko[i][1] + ' == ' + this.workVersionGecko[i-1][1]);
 				countProcessed++;
 				continue;
 			}
@@ -539,6 +541,12 @@ var mdni = {
 				this.updateInterfaces(this.workVersionGecko[i][4], this.workVersionGecko, i, this.nameInterface);
 				countProcessed++;
 			}
+*/
+// Use this until I figure out the problem with above
+				this.updateProgress('Processing ' + this.workVersionGecko[i][1]);
+				this.updateInterfaces(this.workVersionGecko[i][4], this.workVersionGecko, i, this.nameInterface);
+				countProcessed++;
+
 		}
 
 		if (countProcessed > 0)
@@ -546,7 +554,7 @@ var mdni = {
 			this.debugTrace('generateFromMXR', 950, 'generateStringMDN');
 
 			// Generate string
-			var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.versionGecko);
+			var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.workVersionGecko);
 
 			this.debugTrace('generateFromMXR', 980, 'addInterfaceTab');
 
