@@ -514,6 +514,7 @@ var mdni = {
 	{
 
 		var countProcessed = 0;
+		var lastImplemented = 0;
 		this.updateProgress('Processing');
 		for (var i=0; i<this.workVersionGecko.length; i++)
 		{
@@ -521,6 +522,10 @@ var mdni = {
 			if (this.workVersionGecko[i][3] == 'Path NOT found')
 			{
 				continue;
+			}
+			else
+			{
+				lastImplemented = i;
 			}
 			if (i != 0 && i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4] && this.workVersionGecko[i-1][3] != 'Path NOT found')
 			{
@@ -560,7 +565,7 @@ var mdni = {
 			}
 
 			// Add source to tabs
-			this.addInterfaceEditorTab('Source', this.workVersionGecko[this.workVersionGecko.length-1][5]);
+			this.addInterfaceEditorTab('Source', this.workVersionGecko[lastImplemented][5]);
 		}
 
 		this.updateProgress('Processing complete');
