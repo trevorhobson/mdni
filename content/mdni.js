@@ -47,8 +47,9 @@ var mdni = {
 		['mozilla1.9.1', '1.9.1'],
 		['mozilla1.9.2', '1.9.2'],
 		['mozilla2.0', '2.0'],
-		['mozilla-aurora', '5.0'],
-		['mozilla-central', '6.0'],
+		['mozilla-beta', '5.0'],
+		['mozilla-aurora', '6.0'],
+		['mozilla-central', '7.0'],
 	],
 
 /*
@@ -274,6 +275,11 @@ var mdni = {
 			this.versionGecko = this.versionGeckoDefault;
 		}
 
+		for (var i=0; i<this.versionGecko.length; i++)
+		{
+			this.updateProgress('  ' + this.versionGecko[i]);
+		}
+
 		this.debugTrace('completedGeckoList', 989, 'Enabling user interface');
 		document.getElementById("sourceInterface").removeAttribute("disabled");
 		document.getElementById("generateMDN").removeAttribute("disabled");
@@ -401,6 +407,7 @@ var mdni = {
 				this.updateProgress(workVersionGeckoItem[1] + ' path NOT found');
 				workVersionGeckoItem[2] = 'done';
 				workVersionGeckoItem[3] = 'Path NOT found';
+				this.continueIfReadsComplete();
 			}
 		}
 		else
@@ -408,6 +415,7 @@ var mdni = {
 			this.updateProgress(workVersionGeckoItem[1] + ' path NOT found');
 			workVersionGeckoItem[2] = 'done';
 			workVersionGeckoItem[3] = 'Path NOT found';
+			this.continueIfReadsComplete();
 		}
 
 	},
@@ -504,6 +512,8 @@ var mdni = {
 	// Loop through the interface versions and process them
 	processInterfaceVersions: function()
 	{
+
+		var countProcessed = 0;
 		this.updateProgress('Processing');
 		for (var i=0; i<this.workVersionGecko.length; i++)
 		{
@@ -515,38 +525,43 @@ var mdni = {
 			if (i != 0 && i < this.workVersionGecko.length-1 && this.workVersionGecko[i][4] == this.workVersionGecko[i+1][4] && this.workVersionGecko[i-1][3] != 'Path NOT found')
 			{
 				this.updateProgress('Processing ' + this.workVersionGecko[i][1] + ' == ' + this.workVersionGecko[i+1][1]);
+				countProcessed++;
 				continue;
 			}
 			else
 			{
 				this.updateProgress('Processing ' + this.workVersionGecko[i][1]);
 				this.updateInterfaces(this.workVersionGecko[i][4], this.workVersionGecko, i, this.nameInterface);
+				countProcessed++;
 			}
 		}
 
-		this.debugTrace('generateFromMXR', 950, 'generateStringMDN');
-
-		// Generate string
-		var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.versionGecko);
-
-		this.debugTrace('generateFromMXR', 980, 'addInterfaceTab');
-
-		// Add Interface to tabs
-		this.addInterfaceEditorTab(this.objInterfaceSource.interfaceName, stringMDN);
-
-		if (this.arrayWarnings.length > 0)
+		if (countProcessed > 0)
 		{
-			this.debugTrace('generateFromMXR', 980, 'addWarnings');
+			this.debugTrace('generateFromMXR', 950, 'generateStringMDN');
 
-			this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
-		}
-		else
-		{
-			this.debugTrace('generateFromMXR', 980, 'noWarnings');
-		}
+			// Generate string
+			var stringMDN = this.createInterfaceMDN(this.objInterfaceSource, this.versionGecko);
 
-		// Add source to tabs
-		this.addInterfaceEditorTab('Source', this.workVersionGecko[this.workVersionGecko.length-1][5]);
+			this.debugTrace('generateFromMXR', 980, 'addInterfaceTab');
+
+			// Add Interface to tabs
+			this.addInterfaceEditorTab(this.objInterfaceSource.interfaceName, stringMDN);
+
+			if (this.arrayWarnings.length > 0)
+			{
+				this.debugTrace('generateFromMXR', 980, 'addWarnings');
+
+				this.addInterfaceEditorTab('Warnings', this.arrayWarnings.join('\n'));
+			}
+			else
+			{
+				this.debugTrace('generateFromMXR', 980, 'noWarnings');
+			}
+
+			// Add source to tabs
+			this.addInterfaceEditorTab('Source', this.workVersionGecko[this.workVersionGecko.length-1][5]);
+		}
 
 		this.updateProgress('Processing complete');
 
@@ -785,6 +800,12 @@ var mdni = {
 						stringIdlLines[i+1] = stringIdlLineClean + ' ' + stringIdlLines[i+1];
 						continue;
 					}
+
+					// Fix missing space after [noscript] etc
+					stringIdlLineClean = stringIdlLineClean.replace(/]\s*/, '] ');
+
+					// We only list one of [noscript, notxpcom], which is [notxpcom]
+					stringIdlLineClean = stringIdlLineClean.replace('[noscript, notxpcom]', '[notxpcom]');
 
 					// Get the method name (replace is used for quick and dirty line cleanup)
 					var methodName = stringIdlLineClean.replace(/\(.*/,'(').match(/\S+(?=\()/)[0];
