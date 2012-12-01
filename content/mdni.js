@@ -930,7 +930,9 @@ var mdni = {
 		stringMDN += '<h1>' + objInterface.interfaceName + '</h1>\n';
 
 		// Add iterface summary to MDN string
-		stringMDN += '<p>{{IFSummary("' + objInterface.path + '", "' + objInterface.inherits + '", "' + (objInterface.scriptable == true ? 'Scriptable' : 'Not scriptable') + '", "' + sourceVersionGecko[objInterface.versionLastChanged][1] + '", "??? Add brief description of Interface ???"';
+		stringMDN += '<p>{{IFSummaryStart("' + objInterface.path + '", "' + (objInterface.scriptable == true ? 'Scriptable' : 'Not scriptable') + '")}}</p>\n';
+		stringMDN += '??? Add brief description of Interface ???';
+		stringMDN += '<p>{{IFSummaryEnd("' + objInterface.inherits + '", "' + sourceVersionGecko[objInterface.versionLastChanged][1] + '"';
 		
 		// If this is a new interface
 		if (objInterface.versionFirst != 0)
@@ -1765,16 +1767,8 @@ var mdni = {
 				// Add missing punctuation
 				arrayParagraph[i] = arrayParagraph[i].replace(/(\d|\w)(?=\n|$)/, '$1\.');
 
-				// Escape " that are going to be in notes
-				if (arrayParagraph[i].match(/^@note\s/i) !== null)
-				{
-					arrayParagraph[i] = arrayParagraph[i].replace(/"/g, '\\"');
-				}
-				// wiki.html {{ and }} that are not going to be in notes (should just be able to encode, but wiki converts them back)
-				else
-				{
-					arrayParagraph[i] = arrayParagraph[i].replace(/((?:&#123;){2,}|(?:&#125;){2,})/g, '{{web.html("$1")}}');
-				}
+				// web.html {{ and }} that are not going to be in notes (should just be able to encode, but wiki converts them back) NOT sure if Kuma does
+				arrayParagraph[i] = arrayParagraph[i].replace(/((?:&#123;){2,}|(?:&#125;){2,})/g, '{{web.html("$1")}}');
 
 				// Add internal links and code format
 				arrayParagraph[i] = this.commentFormatLink(arrayParagraph[i], regInterface, regAddCode, regAddMethod, regAddCodeExtra)
@@ -1782,9 +1776,7 @@ var mdni = {
 				// Add note template to notes
 				if (arrayParagraph[i].match(/^@note\s/i) !== null)
 				{
-					// Fix templates that are going to be inside notes
-					arrayParagraph[i] = arrayParagraph[i].replace(/{{([^}}]*)}}/g, '" .. $1 .. "');
-					arrayParagraph[i] = '{{note("' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '")}}';
+					arrayParagraph[i] = '{{noteStart()}}' + this.firstCaps(arrayParagraph[i].replace(/^@note\s+/, '')) + '{{noteEnd()}}';
 				}
 
 				// Convert &#123; and &#125; to { and } as they should all be safe now
