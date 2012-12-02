@@ -992,6 +992,7 @@ var mdni = {
 				stringMDN += '<code>' + objInterface.methods[arrayMethodsIHash].lineIdl.replace(/\S+(?=\()/, stringMethodLink).replace(/\s+$/, '').replace(/\[out,\s?retval\]/gi,'[out]') + '</code>';
 				stringMDN += objInterface.methods[arrayMethodsIHash].notxpcomText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].noscriptText;
+				stringMDN += objInterface.methods[arrayMethodsIHash].jscontextText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].minversionText;
 				stringMDN += objInterface.methods[arrayMethodsIHash].obsoleteText;
 				stringMDN += '</td>\n';
@@ -1032,10 +1033,15 @@ var mdni = {
 				{
 					stringAttributeTypeLink = stringAttributeType.replace(regInterface, '{{ Interface("$1") }}')
 				}
+				// Is a DOMxxx
+				else if (stringAttributeType.match(/^DOM.*/) !== null)
+				{
+					stringAttributeTypeLink = '{{ domxref("' + stringAttributeType + '") }}';
+				}
 				 // Is another type
 				else
 				{
-					stringAttributeTypeLink = '<a href="/en-US/docs/' + stringAttributeType.replace(/\s+/g, '_') + '" title="en-US/docs/' + stringAttributeType + '">' + stringAttributeType + '</a>';
+					stringAttributeTypeLink = '<a href="/en-US/docs/XPIDL#Types" title="/en-US/docs/XPIDL#Types">' + stringAttributeType + '</a>';
 				}
 
 				// Format prefix
@@ -1054,6 +1060,7 @@ var mdni = {
 				stringMDN += stringAttributePrefix
 				stringMDN += objInterface.attributes[arrayAttributes[i]].notxpcomText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].noscriptText;
+				stringMDN += objInterface.attributes[arrayAttributes[i]].jscontextText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].minversionText;
 				stringMDN += objInterface.attributes[arrayAttributes[i]].obsoleteText;
 
@@ -1126,6 +1133,7 @@ var mdni = {
 					stringMDN += stringConstantCommentPretty;
 					stringMDN += objInterface.constants[arrayConstants[i]].notxpcomText;
 					stringMDN += objInterface.constants[arrayConstants[i]].noscriptText;
+					stringMDN += objInterface.constants[arrayConstants[i]].jscontextText;
 					stringMDN += objInterface.constants[arrayConstants[i]].minversionText;
 					stringMDN += objInterface.constants[arrayConstants[i]].obsoleteText;
 					stringMDN += '</td>\n';
@@ -1249,6 +1257,18 @@ var mdni = {
 					{
 						stringMDN += '<p>{{ method_noscript("' + objInterface.methods[arrayMethodsIHash].nameText + '") }}</p>\n';
 					}
+					if (objInterface.methods[arrayMethodsIHash].minversionText !== '')
+					{
+						stringMDN += '<p>{{ gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '") }}</p>\n'
+					}
+					if (objInterface.methods[arrayMethodsIHash].obsoleteText !== '')
+					{
+						stringMDN += '<p>{{ obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '") }}</p>\n'
+					}
+				}
+				else if (objInterface.methods[arrayMethodsIHash].jscontextText !== '') // implicit_jscontext
+				{
+					stringMDN += '<p>{{ method_jscontext("' + objInterface.methods[arrayMethodsIHash].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '") }}</p>\n';
 					if (objInterface.methods[arrayMethodsIHash].minversionText !== '')
 					{
 						stringMDN += '<p>{{ gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '") }}</p>\n'
@@ -1925,6 +1945,14 @@ var mdni = {
 			{
 				objGeneric.noscriptText = ' {{noscript_inline()}}';
 				objGeneric.lineIdl = objGeneric.lineIdl.replace(/\[noscript\]\s+/, '')
+			}
+
+			// Check if implicit_jscontext
+			objGeneric.jscontextText = '';
+			if (objGeneric.lineIdl.match(/\[implicit_jscontext\]\s+/i) !== null)
+			{
+				objGeneric.jscontextText = ' {{jscontext_inline()}}';
+				objGeneric.lineIdl = objGeneric.lineIdl.replace(/\[implicit_jscontext\]\s+/, '')
 			}
 
 			// Check if obsolete
