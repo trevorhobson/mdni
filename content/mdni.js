@@ -303,7 +303,7 @@ var mdni = {
 	userLinkMDN: function()
 	{
 		var sourceInterface = document.getElementById("sourceInterface").value;
-		var url = "https://developer.mozilla.org/en/XPCOM_Interface_Reference/"  + sourceInterface;
+		var url = "https://developer.mozilla.org/en-US/docs/XPCOM_Interface_Reference/"  + sourceInterface;
 		if (sourceInterface !== '')
 		{
 			this.openAndReuseOneTabPerURL(url);
@@ -926,13 +926,10 @@ var mdni = {
 
 		var stringMDN = '';
 
-		// Add header to MDN string
-		stringMDN += '<h1>' + objInterface.interfaceName + '</h1>\n';
-
 		// Add iterface summary to MDN string
-		stringMDN += '<p>{{IFSummaryStart("' + objInterface.path + '", "' + (objInterface.scriptable == true ? 'Scriptable' : 'Not scriptable') + '")}}</p>\n';
+		stringMDN += '<p>{{ IFSummaryStart("' + objInterface.path + '", "' + (objInterface.scriptable == true ? 'Scriptable' : 'Not scriptable') + '") }}\n';
 		stringMDN += '??? Add brief description of Interface ???';
-		stringMDN += '<p>{{IFSummaryEnd("' + objInterface.inherits + '", "' + sourceVersionGecko[objInterface.versionLastChanged][1] + '"';
+		stringMDN += '{{ IFSummaryEnd("' + objInterface.inherits + '", "' + sourceVersionGecko[objInterface.versionLastChanged][1] + '"';
 		
 		// If this is a new interface
 		if (objInterface.versionFirst != 0)
@@ -947,7 +944,7 @@ var mdni = {
 			stringMDN += ', "", "' + sourceVersionGecko[objInterface.versionLast + 1][1] + '" , "' + sourceVersionGecko[objInterface.versionLast + 1][1] + '"';
 		}
 
-		stringMDN += ')}}</p>\n';
+		stringMDN += ') }}</p>\n';
 
 		// If the interface has a comment then make it pretty and add it to the MDN string (May be too long/complex to put in IFSummary)
 		if (objInterface.comment !== '')
@@ -983,7 +980,7 @@ var mdni = {
 		// Create Method overview table
 		if (arrayMethods && arrayMethods.length > 0)
 		{
-			stringMDN += '<h2 name="' + this.lz_MethodOverview_Name + '">' + this.lz_MethodOverview + '</h2>\n';
+			stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_MethodOverview_Name) + '">' + this.lz_MethodOverview + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			for (var i=0; i<arrayMethods.length; i++)
@@ -1009,7 +1006,7 @@ var mdni = {
 		// Create Attributes table
 		if (arrayAttributes && arrayAttributes.length > 0)
 		{
-			stringMDN += '<h2 name="' + this.lz_Attributes_Name + '">' + this.lz_Attributes + '</h2>\n';
+			stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_Attributes_Name) + '">' + this.lz_Attributes + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			stringMDN += '<tr>\n';
@@ -1033,12 +1030,12 @@ var mdni = {
 				// If it is an Interface
 				if (stringAttributeType.match(regInterface) !== null)
 				{
-					stringAttributeTypeLink = stringAttributeType.replace(regInterface, '{{Interface("$1")}}')
+					stringAttributeTypeLink = stringAttributeType.replace(regInterface, '{{ Interface("$1") }}')
 				}
 				 // Is another type
 				else
 				{
-					stringAttributeTypeLink = '<a href="mks://localhost/en/' + stringAttributeType.replace(/\s+/g, '_') + '" title="en/' + stringAttributeType + '">' + stringAttributeType + '</a>';
+					stringAttributeTypeLink = '<a href="/en-US/docs/' + stringAttributeType.replace(/\s+/g, '_') + '" title="en-US/docs/' + stringAttributeType + '">' + stringAttributeType + '</a>';
 				}
 
 				// Format prefix
@@ -1063,7 +1060,7 @@ var mdni = {
 				// Show exceptions
 				if (objInterface.attributes[arrayAttributes[i]].exceptions)
 				{
-					stringMDN += '<h6 name="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
+					stringMDN += '<h6 id="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
 					stringMDN += '<dl>\n';
 					for each (var objException in objInterface.attributes[arrayAttributes[i]].exceptions)
 					{
@@ -1085,7 +1082,7 @@ var mdni = {
 		// Create Constants table
 		if (arrayConstants && arrayConstants.length > 0)
 		{
-			stringMDN += '<h2 name="' + this.lz_Constants_Name + '">' + this.lz_Constants + '</h2>\n';
+			stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_Constants_Name) + '">' + this.lz_Constants + '</h2>\n';
 			stringMDN += '<table class="standard-table">\n';
 			stringMDN += '<tbody>\n';
 			if (objInterface.constantsChanged == false)
@@ -1180,7 +1177,7 @@ var mdni = {
 		// Create Methods
 		if (arrayMethods && arrayMethods.length > 0)
 		{
-			stringMDN += '<h2 name="' + this.lz_Methods_Name + '">' + this.lz_Methods + '</h2>\n';
+			stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_Methods_Name) + '">' + this.lz_Methods + '</h2>\n';
 			for (var i=0; i<arrayMethods.length; i++)
 			{
 				var arrayMethodsIHash = this.stringHash(arrayMethods[i]);
@@ -1246,36 +1243,36 @@ var mdni = {
 				{
 					if (objInterface.methods[arrayMethodsIHash].notxpcomText !== '') // Notxpcom
 					{
-						stringMDN += '<p>{{method_notxpcom("' + objInterface.methods[arrayMethodsIHash].nameText + '")}}</p>\n';
+						stringMDN += '<p>{{ method_notxpcom("' + objInterface.methods[arrayMethodsIHash].nameText + '") }}</p>\n';
 					}
 					else
 					{
-						stringMDN += '<p>{{method_noscript("' + objInterface.methods[arrayMethodsIHash].nameText + '")}}</p>\n';
+						stringMDN += '<p>{{ method_noscript("' + objInterface.methods[arrayMethodsIHash].nameText + '") }}</p>\n';
 					}
 					if (objInterface.methods[arrayMethodsIHash].minversionText !== '')
 					{
-						stringMDN += '<p>{{gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '")}}</p>\n'
+						stringMDN += '<p>{{ gecko_minversion_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '") }}</p>\n'
 					}
 					if (objInterface.methods[arrayMethodsIHash].obsoleteText !== '')
 					{
-						stringMDN += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '")}}</p>\n'
+						stringMDN += '<p>{{ obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '") }}</p>\n'
 					}
 				}
 				else if (objInterface.methods[arrayMethodsIHash].minversionText !== '') // Minversion
 				{
-					stringMDN += '<p>{{method_gecko_minversion("' + objInterface.methods[arrayMethodsIHash].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '")}}</p>\n';
+					stringMDN += '<p>{{ method_gecko_minversion("' + objInterface.methods[arrayMethodsIHash].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionFirst][1] + '") }}</p>\n';
 					if (objInterface.methods[arrayMethodsIHash].obsoleteText !== '')
 					{
-						stringMDN += '<p>{{obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '")}}</p>\n'
+						stringMDN += '<p>{{ obsolete_header("' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '") }}</p>\n'
 					}
 				}
 				else if (objInterface.methods[arrayMethodsIHash].obsoleteText !== '') // Obsolete
 				{
-					stringMDN += '<p>{{method_obsolete_gecko("' + objInterface.methods[arrayMethodsIHash].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '")}}</p>\n';
+					stringMDN += '<p>{{ method_obsolete_gecko("' + objInterface.methods[arrayMethodsIHash].nameText + '","' + sourceVersionGecko[objInterface.methods[arrayMethodsIHash].versionLast + 1][1] + '") }}</p>\n';
 				}
 				else // Clean
 				{
-					stringMDN += '<h3 name="' + objInterface.methods[arrayMethodsIHash].nameText + '()">' + objInterface.methods[arrayMethodsIHash].nameText + '()</h3>\n'
+					stringMDN += '<h3 id="' + objInterface.methods[arrayMethodsIHash].nameText + '()">' + objInterface.methods[arrayMethodsIHash].nameText + '()</h3>\n'
 				}
 
 				// If there is a brief then use it, otherwise use comment
@@ -1303,7 +1300,7 @@ var mdni = {
 						// If the parameter is optional then deal with that
 						if (arrayMethodParameters[iParameters].match(/\[optional\]/i))
 						{
-							stringMDN += ' {{optional_inline()}}'
+							stringMDN += ' {{ optional_inline() }}'
 						}
 					}
 					stringMDN += '\n);\n';
@@ -1315,7 +1312,7 @@ var mdni = {
 				stringMDN += '</pre>\n';
 
 				// Show parameters
-				stringMDN += '<h6 name="' + this.lz_Parameters_Name + '">' + this.lz_Parameters + '</h6>\n';
+				stringMDN += '<h6 id="' + this.lz_Parameters_Name + '">' + this.lz_Parameters + '</h6>\n';
 				if (arrayMethodParameters.length > 0)
 				{
 					stringMDN += '<dl>\n';
@@ -1328,7 +1325,7 @@ var mdni = {
 						// If the parameter is optional then deal with that
 						if (arrayMethodParameters[iParameters].match(/\[optional\]/i))
 						{
-							stringMDN += ' {{optional_inline()}}'
+							stringMDN += ' {{ optional_inline() }}'
 						}
 						stringMDN += '</dt>\n';
 						stringMDN += '<dd>';
@@ -1354,7 +1351,7 @@ var mdni = {
 				// Show returns, if there is a return (not void)
 				if (objInterface.methods[arrayMethodsIHash].lineIdl.match(/^void\s+/i) === null)
 				{
-					stringMDN += '<h6 name="' + this.lz_ReturnValue_Name + '">' + this.lz_ReturnValue + '</h6>\n';
+					stringMDN += '<h6 id="' + this.lz_ReturnValue_Name + '">' + this.lz_ReturnValue + '</h6>\n';
 					stringMDN += '<p>';
 					// If there are retval and/or returns
 					if (objInterface.methods[arrayMethodsIHash].retval || objInterface.methods[arrayMethodsIHash].returns)
@@ -1376,7 +1373,7 @@ var mdni = {
 				}
 
 				// Show exceptions
-				stringMDN += '<h6 name="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
+				stringMDN += '<h6 id="' + this.lz_ExceptionsThrown_Name + '">' + this.lz_ExceptionsThrown + '</h6>\n';
 				stringMDN += '<dl>';
 				if (objInterface.methods[arrayMethodsIHash].exceptions)
 				{
@@ -1395,24 +1392,24 @@ var mdni = {
 			}
 		}
 
-		stringMDN += '<h2 name="' + this.lz_Remarks_Name + '">' + this.lz_Remarks + '</h2>\n';
+		stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_Remarks_Name) + '">' + this.lz_Remarks + '</h2>\n';
 		stringMDN += '<p>&nbsp;</p>\n';
 
-		stringMDN += '<h2 name="' + this.lz_SeeAlso_Name + '">' + this.lz_SeeAlso + '</h2>\n';
+		stringMDN += '<h2 id="' + this.spaceUnderscore(this.lz_SeeAlso_Name) + '">' + this.lz_SeeAlso + '</h2>\n';
 		stringMDN += '<ul>\n  <li>&nbsp;</li>\n</ul>\n';
 
 		// Strip references to this interface
-		var regInterfaceThis = new RegExp('{{interface\\("(<code>' + objInterface.interfaceName + '</code>)"\\)}}', 'gi');
+		var regInterfaceThis = new RegExp('{{\s*interface\\("(<code>' + objInterface.interfaceName + '</code>)"\\)\s*}}', 'gi');
 		stringMDN = stringMDN.replace(regInterfaceThis,'$1');
 
 		// Remove cases of {{interface("mozilla")}}
-		stringMDN = stringMDN.replace(/{{interface\("(mozilla)"\)}}/gi,'$1');
+		stringMDN = stringMDN.replace(/{{\s*interface\("(mozilla)"\)\s*}}/gi,'$1');
 
 		// Remove cases of " .. interface("mozilla") .. "
 		stringMDN = stringMDN.replace(/"\s\.\.\sinterface\("(mozilla)"\)\s\.\.\s\"/gi,'$1');
 
 		// Turn interface with method into ifmethod
-		stringMDN = stringMDN.replace(/\{\{interface\(("\w*")\)\}\}\:\:(\w*)(\(\s*\))?/g,'{{ifmethod($1,"$2")}}');
+		stringMDN = stringMDN.replace(/\{\{\s*interface\(("\w*")\)\s*\}\}\:\:(\w*)(\(\s*\))?/g,'{{ifmethod($1,"$2")}}');
 
 		// Strip interface::
 		stringMDN = stringMDN.replace(/<code>\w*<\/code>\:\:/g,'');
@@ -2099,6 +2096,12 @@ var mdni = {
 
 		return hash;
 
+	},
+
+	// Space to underscore
+	spaceUnderscore: function(stringToFix)
+	{
+		return stringToFix.replace(/' '/g, '_');
 	},
 
 /***********************************************************
