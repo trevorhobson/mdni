@@ -817,6 +817,9 @@ var mdni = {
 					// Fix missing space after [noscript] etc
 					stringIdlLineClean = stringIdlLineClean.replace(/]\s*/, '] ');
 
+                    // Strip [binaryname(...)] as we do not use it
+					stringIdlLineClean = stringIdlLineClean.replace(/\[binaryname\([^\)]*\)\]\s+/, '');
+
 					// We only list one of [noscript, notxpcom], which is [notxpcom]
 					stringIdlLineClean = stringIdlLineClean.replace('[noscript, notxpcom]', '[notxpcom]');
 
