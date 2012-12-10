@@ -1052,11 +1052,14 @@ var mdni = {
 				var stringAttributePrefix = '';
 				if (stringAttributePrefixRaw !== null)
 				{
-					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '').replace(/\s*readonly/i, '<strong>' + this.lz_ReadOnly + '</strong>');
+					stringAttributePrefix = stringAttributePrefixRaw[0].replace(/(^\s+|\s+$)/g, '');
 				}
 
 				stringMDN += '<tr>\n';
-				stringMDN += '<td><code>' + objInterface.attributes[arrayAttributes[i]].nameText + '</code></td>\n';
+				stringMDN += '<td>';
+				stringMDN += '<code>' + objInterface.attributes[arrayAttributes[i]].nameText + '</code>';
+				stringMDN += objInterface.attributes[arrayAttributes[i]].readonlyText;
+				stringMDN += '</td>\n';
 				stringMDN += '<td><code>' + stringAttributeTypeLink + '</code></td>\n';
 				stringMDN += '<td>'
 				stringMDN += stringAttributeCommentPretty;
@@ -1932,6 +1935,14 @@ var mdni = {
 			if (objGeneric.versionFirst != objInterface.versionFirst)
 			{
 				objGeneric.minversionText = ' {{gecko_minversion_inline("' + sourceVersionGecko[objGeneric.versionFirst][1] + '")}}';
+			}
+
+			// Check if readonly
+			objGeneric.readonlyText = '';
+			if (objGeneric.lineIdl.match(/readonly\s+/i) !== null)
+			{
+				objGeneric.readonlyText = ' {{ReadOnlyInline()}}';
+				objGeneric.lineIdl = objGeneric.lineIdl.replace(/readonly\s+/, '')
 			}
 
 			// Check if notxpcom
